@@ -130,4 +130,77 @@ Exposer une API propre pour le front (et pour Codex s’il doit appeler des endp
    const supabaseUrl = process.env.SUPABASE_URL!;
    const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
-   export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey);
+   export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey); //
+
+
+3. Accès Drizzle
+
+- Initialiser Drizzle dans src/db/client.ts ou lib/db.ts.
+- Utiliser Drizzle pour les requêtes SQL structurées (catalogue, relations tags, sections…).
+
+4. Pas d’exposition des secrets
+
+- Ne jamais utiliser la clé service_role dans du code client (use client).
+- Les fonctions qui consomment Supabase ou Drizzle doivent être exécutées côté serveur.
+
+2.4. UI Agent (Next 16 + React 19)
+
+Responsabilité :
+Construire l’interface publique (catalogue des outils) et les futures interfaces back-office.
+
+Règles :
+
+- Server Components par défaut
+  - Les pages dans app/ sont des Server Components par défaut.
+  - On utilise les loaders côté serveur pour récupérer les données via Drizzle/Supabase.
+- Client Components uniquement pour l’interactivité
+  - Marquer use client uniquement pour :
+    - filtres dynamiques,
+    - boutons / formulaires interactifs,
+    - navigation enrichie, etc.
+- Outils modernes
+  - Utiliser les features React 19 (ex. useTransition) pour les UX plus fluides si besoin.
+  - Utiliser les Server Actions de Next 16 pour les mutations simples côté serveur (création d’outil, tag, etc.) plutôt que créer une API REST à la main quand cela simplifie.
+- Design
+  - Utiliser un système de composants (ex : Tailwind + composants maison) pour garder une UI cohérente.
+  - Regrouper les composants réutilisables dans app/_components/ ou src/components/.
+
+2.5. CI/CD Agent (GitHub Actions)
+
+Responsabilité :
+Automatiser les migrations et garder la DB en phase avec le code.
+
+Règles :
+- Workflow Supabase migrations
+  - Fichier : .github/workflows/supabase-migrations.yml.
+  - Déclenché sur :
+      - push sur main (pour prod),
+      - workflow_dispatch (pour lancer à la main si nécessaire).
+
+- Secret requis
+  - SUPABASE_DB_URL = connection string Session Pooler (IPv4), stockée dans Actions Secrets.
+- Commandes
+  - Appliquer les migrations avec :
+    - supabase migration up --include-all --db-url "$SUPABASE_DB_URL"
+-Build Vercel
+  - Ne doit pas lancer de migrations.
+  - Build command : npm run build uniquement.
+ 
+3. Convention d’environnement
+À respecter dans tous les nouveaux développements :
+
+- Côté client (public) :
+  - NEXT_PUBLIC_SUPABASE_URL
+  - NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+Côté serveur (secret) :
+  - SUPABASE_URL
+  - SUPABASE_SERVICE_ROLE_KEY
+  - SUPABASE_DB_URL (pour Drizzle/migrations si nécessaire)
+
+Les assistants (Codex / AI) doivent :
+
+- Utiliser uniquement NEXT_PUBLIC_* dans du code client.
+- Utiliser les variables non NEXT_PUBLIC_* uniquement dans des fichiers serveur (Route Handlers, Server Components, scripts Node, GitHub Actions).
+ 
+
