@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { db } from '@/lib/db/client';
+import { getDb } from '@/lib/db/client';
 import { tools, toolsCatalog } from '@/lib/db/schema';
 import { createToolSchema, toolsResponseSchema, type ToolStatus } from '@/lib/validation/tools';
 
@@ -14,7 +14,9 @@ type CatalogRow = {
   notes: string | null;
   targetPopulation: string | null;
   status: ToolStatus;
-  createdAt: string;
+  createdAt: Date | string;
+  type: string | null;
+  source: string | null;
 };
 
 type CommunityRow = {
@@ -24,13 +26,13 @@ type CommunityRow = {
   type: string;
   tags: string[];
   source: string;
-  createdAt: string;
+  createdAt: Date | string;
 };
 
 export async function GET() {
   try {
     const [catalogRows, communityRows] = await Promise.all([
-      db
+      getDb()
         .select({
           id: toolsCatalog.id,
           title: toolsCatalog.title,
@@ -45,7 +47,7 @@ export async function GET() {
           createdAt: toolsCatalog.createdAt,
         })
         .from(toolsCatalog),
-      db
+      getDb()
         .select({
           id: tools.id,
           name: tools.name,
@@ -63,6 +65,9 @@ export async function GET() {
         .map((tool) => {
           const isCommunity = 'name' in tool;
 
+          const createdAt =
+            tool.createdAt instanceof Date ? tool.createdAt.toISOString() : tool.createdAt;
+
           if (isCommunity) {
             const community = tool as CommunityRow;
             return {
@@ -76,7 +81,7 @@ export async function GET() {
               notes: null,
               targetPopulation: 'Tous publics',
               status: 'Communauté' as const,
-              createdAt: community.createdAt,
+              createdAt,
               type: community.type,
               source: community.source,
             } satisfies CatalogRow & { type: string; source: string };
@@ -94,7 +99,7 @@ export async function GET() {
             notes: catalog.notes ?? null,
             targetPopulation: catalog.targetPopulation ?? 'Tous publics',
             status: catalog.status,
-            createdAt: catalog.createdAt,
+            createdAt,
             type: null,
             source: catalog.links?.[0]?.url ?? null,
           } satisfies CatalogRow;
@@ -120,7 +125,7 @@ export async function POST(request: NextRequest) {
     const json = await request.json();
     const payload = createToolSchema.parse(json);
 
-    const [inserted] = await db
+    const [inserted] = await getDb()
       .insert(tools)
       .values({
         name: payload.name,
@@ -129,7 +134,7 @@ export async function POST(request: NextRequest) {
         tags: payload.tags,
         source: payload.source,
       })
-      .select({
+      .returning({
         id: tools.id,
         name: tools.name,
         category: tools.category,
@@ -150,7 +155,10 @@ export async function POST(request: NextRequest) {
       notes: null,
       targetPopulation: 'Tous publics',
       status: 'Communauté' as const,
-      createdAt: inserted.createdAt,
+      createdAt:
+        inserted.createdAt instanceof Date
+          ? inserted.createdAt.toISOString()
+          : inserted.createdAt ?? new Date().toISOString(),
       type: inserted.type,
       source: inserted.source,
     });

@@ -1,13 +1,22 @@
-import { drizzle } from 'drizzle-orm/supabase-js';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { supabaseAdmin } from '../supabaseClient';
+import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
-function assertAdminClient(client: SupabaseClient<Record<string, unknown>> | null) {
-  if (!client) {
-    throw new Error('SUPABASE_SECRET_KEY est requis pour les opérations côté serveur.');
+let cachedDb: PostgresJsDatabase<Record<string, unknown>> | null = null;
+let cachedClient: ReturnType<typeof postgres> | null = null;
+
+export function getDb() {
+  if (cachedDb) {
+    return cachedDb;
   }
 
-  return client;
-}
+  const connectionString = process.env.SUPABASE_DB_URL;
 
-export const db = drizzle(assertAdminClient(supabaseAdmin));
+  if (!connectionString) {
+    throw new Error('SUPABASE_DB_URL est requis pour initialiser Drizzle.');
+  }
+
+  cachedClient = postgres(connectionString, { prepare: false });
+  cachedDb = drizzle(cachedClient);
+
+  return cachedDb;
+}
