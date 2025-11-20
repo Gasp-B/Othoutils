@@ -18,7 +18,7 @@ const App: React.FC = () => {
   );
 
   return (
-    <div style={{ color: '#0f172a', paddingBottom: '2rem' }}>
+    <div id="top" style={{ color: '#cbd5e1', paddingBottom: '2rem' }}>
       <Header />
       <Hero />
 
@@ -34,7 +34,11 @@ const App: React.FC = () => {
         </div>
       </section>
 
-      <section className="container" style={{ display: 'grid', gap: '1.2rem', marginTop: '1.6rem' }}>
+      <section
+        id="collaboration"
+        className="container"
+        style={{ display: 'grid', gap: '1.2rem', marginTop: '1.6rem' }}
+      >
         <div className="card-grid">
           <div
             className="glass"

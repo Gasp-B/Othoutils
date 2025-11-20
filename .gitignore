@@ -3,6 +3,7 @@ node_modules
 .env.local
 dist
 npm-debug.log*
-*.tsbuildinfo
-vite.config.js
+tsconfig.tsbuildinfo
+tsconfig.node.tsbuildinfo
 vite.config.d.ts
+vite.config.js
