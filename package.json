@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "migrate:apply": "sh -c 'if [ -z \"$SUPABASE_DB_URL\" ]; then echo "SUPABASE_DB_URL manquant" >&2; exit 1; fi; supabase migration up --db-url \"$SUPABASE_DB_URL\" --include-all'",
-    "migrate:rollback": "sh -c 'if [ -z \"$SUPABASE_DB_URL\" ]; then echo "SUPABASE_DB_URL manquant" >&2; exit 1; fi; supabase migration down 1 --db-url \"$SUPABASE_DB_URL\" --include-all'"
+    "migrate:apply": "sh -c 'if [ -z \"$SUPABASE_DB_URL\" ]; then echo \"SUPABASE_DB_URL manquant\" >&2; exit 1; fi; supabase migration up --db-url \"$SUPABASE_DB_URL\" --include-all'",
+    "migrate:rollback": "sh -c 'if [ -z \"$SUPABASE_DB_URL\" ]; then echo \"SUPABASE_DB_URL manquant\" >&2; exit 1; fi; supabase migration down 1 --db-url \"$SUPABASE_DB_URL\" --include-all'"
   },
   "dependencies": {
     "@supabase/ssr": "0.7.0",
