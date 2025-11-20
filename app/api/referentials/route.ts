@@ -24,8 +24,12 @@ type ReferentialRow = {
   }> | null;
 };
 
-type ReferentialSubsectionRow = NonNullable<ReferentialRow['section_subsections']>[number]['subsection'];
-type ReferentialTagRow = NonNullable<ReferentialSubsectionRow['subsection_tags']>[number]['tag'];
+type ReferentialSubsectionRow = NonNullable<
+  NonNullable<ReferentialRow['section_subsections']>[number]['subsection']
+>;
+type ReferentialTagRow = NonNullable<
+  NonNullable<ReferentialSubsectionRow['subsection_tags']>[number]['tag']
+>;
 
 export async function GET() {
   try {
