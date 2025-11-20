@@ -42,3 +42,16 @@ CREATE TABLE subsection_tags (
 -- Besoins, Langage oral (enfants), Langage écrit, AVQ, Dysarthrie, Lésions bulbares,
 -- Cognition générale, Fonction exécutive / mémoire, et la sous-catégorie transverse "Nom" reliée à plusieurs sections.
 -- Tags: Dysarthrie (oral); Accompagnement; Communication; Langage oral; Langage écrit; Cognition; Neurodégénérescence.
+
+-- Catalog of clinical tools and resources.
+CREATE TABLE tools_catalog (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  title text NOT NULL UNIQUE,
+  category text NOT NULL,
+  color_label text,
+  tags text[] NOT NULL DEFAULT '{}',
+  description text,
+  links jsonb NOT NULL DEFAULT '[]'::jsonb,
+  notes text,
+  created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+);
