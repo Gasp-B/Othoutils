@@ -3,14 +3,15 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY;
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY ?? process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-type GenericSupabaseClient = SupabaseClient<any>;
+type GenericSupabaseClient = SupabaseClient<Record<string, unknown>>;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
-    "Les variables d'environnement Supabase ne sont pas définies. Ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY pour activer la persistance côté client.",
+    "Les variables d'environnement Supabase ne sont pas définies. Ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (ou NEXT_PUBLIC_SUPABASE_ANON_KEY) pour activer la persistance côté client.",
   );
 }
 
@@ -51,7 +52,7 @@ export function createRouteHandlerSupabaseClient(): GenericSupabaseClient {
     return undefined;
   };
 
-  const client = createServerClient<any, 'public'>(
+  const client = createServerClient<Record<string, unknown>, 'public'>(
     assertValue(supabaseUrl, 'NEXT_PUBLIC_SUPABASE_URL est requis'),
     assertValue(supabaseAnonKey, 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY est requis'),
     {
