@@ -11,7 +11,17 @@ function getClientKey(request: NextRequest) {
     return xForwardedFor.split(',')[0]?.trim() ?? 'unknown';
   }
 
-  return request.ip ?? 'global';
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp;
+  }
+
+  const connectingIp = request.headers.get('cf-connecting-ip');
+  if (connectingIp) {
+    return connectingIp;
+  }
+
+  return 'global';
 }
 
 function getUpdatedEntry(key: string) {
