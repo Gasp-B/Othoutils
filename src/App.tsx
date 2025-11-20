@@ -25,7 +25,7 @@ const App: React.FC = () => {
       <section id="catalogue" className="container" style={{ display: 'grid', gap: '1.2rem', padding: '0 0 1rem' }}>
         <div className="section-title">
           <span />
-          <p style={{ margin: 0 }}>Catalogue prêt à éditer</p>
+          <p style={{ margin: 0 }}>Référentiels prêts à consulter</p>
         </div>
         <div className="card-grid">
           {tools.map((tool) => (

@@ -16,7 +16,12 @@ const Hero: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div className="section-title">
             <span />
-            <p style={{ margin: 0, opacity: 0.75 }}>Orthophonie augmentée par la communauté</p>
+            <p style={{ margin: 0, opacity: 0.75 }}>Référentiels consolidés par des orthophonistes</p>
+          </div>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', color: '#c7f9cc' }}>
+            <span className="tag" style={{ background: 'rgba(34,197,94,0.15)', color: '#d1fae5' }}>
+              Validé et mis à jour par des professionnels de santé
+            </span>
           </div>
           <h1
             style={{
@@ -26,19 +31,19 @@ const Hero: React.FC = () => {
               lineHeight: 1.2,
             }}
           >
-            Référencez, évaluez et améliorez les outils d'orthophonie en équipe
+            Les référentiels d'orthophonie validés, prêts à l'emploi
           </h1>
           <p style={{ margin: 0, maxWidth: 640, lineHeight: 1.6 }}>
-            Othoutils centralise les questionnaires, batteries et suivis patients avec un mode collaboratif.
-            Chaque membre peut proposer des évolutions, annoter les fiches et alimenter vos tableaux de bord en
-            temps réel.
+            Othoutils centralise les questionnaires, batteries et suivis patients pour une consultation immédiate,
+            avec des fiches contrôlées par un collectif d'orthophonistes. Les suggestions d'amélioration restent
+            disponibles pour enrichir les référentiels sans gêner la lecture.
           </p>
           <div className="hero-actions" style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
             <a href="#catalogue" className="primary-btn">
-              Découvrir le catalogue
+              Consulter les référentiels
             </a>
-            <a href="#collaboration" className="secondary-btn">
-              Comment proposer des modifications ?
+            <a href="#collaboration" className="ghost-btn">
+              Déposer une suggestion discrètement
             </a>
           </div>
         </div>

@@ -8,7 +8,7 @@ const Header: React.FC = () => {
           <div className="top-banner__mark">OT</div>
           <div>
             <p className="top-banner__title">Othoutils</p>
-            <small className="top-banner__subtitle">Référentiel collaboratif d'outils d'orthophonie</small>
+            <small className="top-banner__subtitle">Référentiels validés par des orthophonistes</small>
           </div>
         </div>
         <nav className="top-banner__nav">
@@ -21,8 +21,8 @@ const Header: React.FC = () => {
           <a href="#collaboration" className="top-banner__link">
             Collaboration
           </a>
-          <a href="#collaboration" className="primary-btn top-banner__cta">
-            Soumettre une idée
+          <a href="#catalogue" className="primary-btn top-banner__cta">
+            Voir les référentiels
           </a>
         </nav>
       </div>

@@ -40,11 +40,11 @@ Elle est prête à être partagée avec le comité éditorial.`,
     <div className="glass" style={{ padding: '1.3rem', display: 'grid', gap: '0.7rem' }} id="collaboration">
       <div className="section-title">
         <span />
-        <p style={{ margin: 0 }}>Proposer une modification</p>
+        <p style={{ margin: 0 }}>Suggestions encadrées</p>
       </div>
       <p style={{ margin: 0, lineHeight: 1.5 }}>
-        Rédigez vos suggestions de mise à jour (terminologie, consignes, scores…) avant de les publier. Le flux garde
-        la trace des discussions, votes et validations pour chaque outil.
+        Les référentiels sont publiés après validation par des orthophonistes. Si besoin, proposez calmement une
+        mise à jour : terminologie, consignes, scores… Chaque échange est archivé et relu par le comité éditorial.
       </p>
       <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '0.75rem' }}>
         <label style={{ display: 'grid', gap: '0.3rem' }}>

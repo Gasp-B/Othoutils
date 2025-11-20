@@ -32,10 +32,10 @@ const ToolCard: React.FC<Props> = ({ tool, onSuggest }) => {
         ))}
       </div>
       <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
-        <button className="primary-btn" onClick={() => onSuggest(tool)}>
-          Proposer une modification
+        <button className="primary-btn">Voir la fiche référentielle</button>
+        <button className="ghost-btn" onClick={() => onSuggest(tool)}>
+          Suggérer une évolution
         </button>
-        <button className="secondary-btn">Voir la fiche détaillée</button>
       </div>
     </article>
   );
