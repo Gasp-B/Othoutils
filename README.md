@@ -10,11 +10,12 @@ npm install
 npm run dev
 ```
 
-Variables d'environnement à ajouter dans `.env.local` pour activer Supabase :
+Variables d'environnement à ajouter dans `.env.local` pour activer Supabase (clé publishable côté client et clé secrète côté serveur) :
 
 ```
-VITE_SUPABASE_URL=<https://xyz.supabase.co>
-VITE_SUPABASE_ANON_KEY=<clé_anon>
+NEXT_PUBLIC_SUPABASE_URL=https://xyz.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<clé_anon>
+SUPABASE_SECRET_KEY=<clé_service>
 ```
 
 ## Fonctionnalités incluses
