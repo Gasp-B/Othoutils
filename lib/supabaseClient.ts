@@ -1,9 +1,13 @@
-import { createBrowserClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
+import { createBrowserClient, createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { cookies } from 'next/headers';
+import { drizzle } from 'drizzle-orm/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SECRET_KEY;
+
+type GenericSupabaseClient = SupabaseClient<unknown, 'public', unknown>;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.warn(
@@ -11,15 +15,61 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabaseClient =
+const browserClient =
   supabaseUrl && supabaseAnonKey ? createBrowserClient(supabaseUrl, supabaseAnonKey) : null;
+
+export const supabaseClient = browserClient;
 
 export const supabaseAdmin =
   supabaseUrl && supabaseServiceKey
-    ? createClient(supabaseUrl, supabaseServiceKey, {
+    ? (createClient(supabaseUrl, supabaseServiceKey, {
         auth: {
           autoRefreshToken: false,
           persistSession: false,
         },
-      })
+      }) as GenericSupabaseClient)
     : null;
+
+function assertValue<T>(value: T | null | undefined, message: string) {
+  if (!value) {
+    throw new Error(message);
+  }
+
+  return value;
+}
+
+export function createRouteHandlerSupabaseClient(): GenericSupabaseClient {
+  const cookieStore = cookies();
+
+  const getCookieValue = (name: string): string | undefined => {
+    const cookie = cookieStore.get(name);
+
+    if (cookie && typeof cookie === 'object' && typeof cookie.value === 'string') {
+      return cookie.value;
+    }
+
+    return undefined;
+  };
+
+  const client = createServerClient<unknown, 'public', unknown>(
+    assertValue(supabaseUrl, 'NEXT_PUBLIC_SUPABASE_URL est requis'),
+    assertValue(supabaseAnonKey, 'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY est requis'),
+    {
+      cookies: {
+        get: getCookieValue,
+        set(_name: string, _value: string, _options: CookieOptions) {},
+        remove(_name: string, _options: CookieOptions) {},
+      },
+    },
+  );
+
+  return client as GenericSupabaseClient;
+}
+
+export function createDrizzleClient(client: GenericSupabaseClient) {
+  return drizzle(client);
+}
+
+export function getAdminDrizzle() {
+  return createDrizzleClient(assertValue(supabaseAdmin, 'SUPABASE_SECRET_KEY est requis pour les opérations serveur.'));
+}

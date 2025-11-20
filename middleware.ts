@@ -44,7 +44,7 @@ export function middleware(request: NextRequest) {
   entry.count += 1;
 
   if (entry.count > MAX_REQUESTS) {
-    return new NextResponse('Too Many Requests', {
+    const limitedResponse = new NextResponse('Too Many Requests', {
       status: 429,
       headers: {
         'Retry-After': `${Math.ceil((entry.expires - Date.now()) / 1000)}`,
@@ -52,6 +52,9 @@ export function middleware(request: NextRequest) {
         'X-RateLimit-Remaining': '0',
       },
     });
+
+    applySecurityHeaders(limitedResponse);
+    return limitedResponse;
   }
 
   const response = NextResponse.next();
@@ -59,7 +62,32 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-RateLimit-Remaining', `${Math.max(0, MAX_REQUESTS - entry.count)}`);
   response.headers.set('X-RateLimit-Reset', `${entry.expires}`);
 
+  applySecurityHeaders(response);
+
   return response;
+}
+
+function applySecurityHeaders(response: NextResponse) {
+  const connectSources = ["'self'", process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://*.supabase.co']
+    .filter(Boolean)
+    .join(' ');
+
+  const csp = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "font-src 'self' data:",
+    "img-src 'self' data:",
+    "object-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    `connect-src ${connectSources}`,
+  ].join('; ');
+
+  response.headers.set('Content-Security-Policy', csp);
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
 }
 
 export const config = {

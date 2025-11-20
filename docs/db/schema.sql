@@ -53,5 +53,9 @@ CREATE TABLE tools_catalog (
   description text,
   links jsonb NOT NULL DEFAULT '[]'::jsonb,
   notes text,
+  target_population text,
+  status text NOT NULL DEFAULT 'Validé',
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
 );
+
+ALTER TABLE tools_catalog ENABLE ROW LEVEL SECURITY;
