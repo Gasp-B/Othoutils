@@ -40,11 +40,7 @@ async function fetchTaxonomy() {
   return (await response.json()) as TaxonomyResponse;
 }
 
-type CreateTaxonomyResponse =
-  | { domain: TaxonomyResponse['domains'][number] }
-  | { tag: TaxonomyResponse['tags'][number] };
-
-async function createTaxonomyItem(payload: TaxonomyMutationInput): Promise<CreateTaxonomyResponse> {
+async function createTaxonomyItem(payload: TaxonomyMutationInput) {
   const response = await fetchWithTimeout('/api/tests/taxonomy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -76,18 +72,7 @@ async function deleteTaxonomyItem(payload: TaxonomyDeletionInput) {
 
 function TaxonomyManager() {
   const queryClient = useQueryClient();
-  const {
-    data,
-    isLoading,
-    isError,
-    isFetching,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: taxonomyQueryKey,
-    queryFn: fetchTaxonomy,
-    retry: false,
-  });
+  const { data, isLoading, isError, error } = useQuery({ queryKey: taxonomyQueryKey, queryFn: fetchTaxonomy });
   const [domainInput, setDomainInput] = useState('');
   const [tagInput, setTagInput] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -116,31 +101,7 @@ function TaxonomyManager() {
 
   const createMutation = useMutation({
     mutationFn: createTaxonomyItem,
-    onSuccess: (created, variables) => {
-      const createdDomain = created && 'domain' in created ? created.domain : null;
-      const createdTag = created && 'tag' in created ? created.tag : null;
-
-      queryClient.setQueryData<TaxonomyResponse | undefined>(taxonomyQueryKey, (previous) => {
-        const next = previous ?? { domains: [], tags: [] };
-
-        if (variables.type === 'domain') {
-          const incoming = createdDomain ?? { id: crypto.randomUUID(), name: variables.value };
-
-          if (next.domains.some((domain) => domain.name.toLowerCase() === incoming.name.toLowerCase())) {
-            return next;
-          }
-
-          return { ...next, domains: [...next.domains, incoming] };
-        }
-
-        const incoming = createdTag ?? { id: crypto.randomUUID(), label: variables.value };
-
-        if (next.tags.some((tag) => tag.label.toLowerCase() === incoming.label.toLowerCase())) {
-          return next;
-        }
-
-        return { ...next, tags: [...next.tags, incoming] };
-      });
+    onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey });
       showToast(
         variables.type === 'domain'
@@ -166,18 +127,7 @@ function TaxonomyManager() {
     onMutate: (variables) => {
       setDeletingId(variables.id);
     },
-    onSuccess: (_, variables) => {
-      queryClient.setQueryData<TaxonomyResponse | undefined>(taxonomyQueryKey, (previous) => {
-        if (!previous) {
-          return previous;
-        }
-
-        if (variables.type === 'domain') {
-          return { ...previous, domains: previous.domains.filter((domain) => domain.id !== variables.id) };
-        }
-
-        return { ...previous, tags: previous.tags.filter((tag) => tag.id !== variables.id) };
-      });
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey });
       showToast('Élément supprimé. Les listes seront actualisées.');
       setErrorMessage(null);
@@ -253,13 +203,8 @@ function TaxonomyManager() {
               </div>
             </div>
             <Separator />
-            {(isLoading || isFetching) && <p className="helper-text">Chargement des domaines…</p>}
+            {isLoading && <p className="helper-text">Chargement des domaines…</p>}
             {isError && <p className="error-text">{error instanceof Error ? error.message : 'Erreur inconnue'}</p>}
-            {isError && (
-              <Button variant="ghost" size="sm" type="button" onClick={() => refetch()}>
-                Réessayer
-              </Button>
-            )}
             {!isLoading && !isError && (
               <div className="space-y-2">
                 {sortedDomains.length === 0 && (
@@ -332,13 +277,8 @@ function TaxonomyManager() {
               </div>
             </div>
             <Separator />
-            {(isLoading || isFetching) && <p className="helper-text">Chargement des tags…</p>}
+            {isLoading && <p className="helper-text">Chargement des tags…</p>}
             {isError && <p className="error-text">{error instanceof Error ? error.message : 'Erreur inconnue'}</p>}
-            {isError && (
-              <Button variant="ghost" size="sm" type="button" onClick={() => refetch()}>
-                Réessayer
-              </Button>
-            )}
             {!isLoading && !isError && (
               <div className="space-y-2">
                 {sortedTags.length === 0 && <p className="helper-text">Aucun tag enregistré pour le moment.</p>}
