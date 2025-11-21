@@ -11,8 +11,27 @@ import type { TaxonomyDeletionInput, TaxonomyMutationInput, TaxonomyResponse } f
 
 const taxonomyQueryKey = ['test-taxonomy'] as const;
 
+const REQUEST_TIMEOUT_MS = 10_000;
+
+async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('Le chargement a expiré, veuillez réessayer.');
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function fetchTaxonomy() {
-  const response = await fetch('/api/tests/taxonomy', { cache: 'no-store' });
+  const response = await fetchWithTimeout('/api/tests/taxonomy', { cache: 'no-store' });
 
   if (!response.ok) {
     throw new Error('Impossible de récupérer les domaines et tags');
@@ -22,7 +41,7 @@ async function fetchTaxonomy() {
 }
 
 async function createTaxonomyItem(payload: TaxonomyMutationInput) {
-  const response = await fetch('/api/tests/taxonomy', {
+  const response = await fetchWithTimeout('/api/tests/taxonomy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -37,7 +56,7 @@ async function createTaxonomyItem(payload: TaxonomyMutationInput) {
 }
 
 async function deleteTaxonomyItem(payload: TaxonomyDeletionInput) {
-  const response = await fetch('/api/tests/taxonomy', {
+  const response = await fetchWithTimeout('/api/tests/taxonomy', {
     method: 'DELETE',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
