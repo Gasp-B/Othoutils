@@ -1,11 +1,13 @@
 import { eq, inArray } from 'drizzle-orm';
+import type { AnyPgTable } from 'drizzle-orm/pg-core';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { getDb } from '@/lib/db/client';
 import { domains, tags, testDomains, testTags, tests } from '@/lib/db/schema';
 import { testInputSchema, testSchema, updateTestInputSchema, type TestDto } from '@/lib/validation/tests';
 import { generateUniqueSlug } from '@/lib/utils/slug';
 import { getTestWithMetadata } from './queries';
 
-type DbClient = ReturnType<typeof getDb>;
+type DbClient = ReturnType<typeof getDb> & PostgresJsDatabase<Record<string, AnyPgTable>>;
 
 function normalizeList(values: string[]) {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
@@ -101,8 +103,8 @@ export async function createTestWithRelations(input: unknown): Promise<TestDto> 
     });
 
     const [domainRecords, tagRecords] = await Promise.all([
-      upsertDomains(tx, payload.domains ?? []),
-      upsertTags(tx, payload.tags ?? []),
+      upsertDomains(tx as DbClient, payload.domains ?? []),
+      upsertTags(tx as DbClient, payload.tags ?? []),
     ]);
 
     const [created] = await tx
@@ -125,8 +127,8 @@ export async function createTestWithRelations(input: unknown): Promise<TestDto> 
       })
       .returning({ id: tests.id });
 
-    await syncDomains(tx, created.id, domainRecords.map((domain) => domain.id));
-    await syncTags(tx, created.id, tagRecords.map((tag) => tag.id));
+    await syncDomains(tx as DbClient, created.id, domainRecords.map((domain) => domain.id));
+    await syncTags(tx as DbClient, created.id, tagRecords.map((tag) => tag.id));
 
     return created.id;
   });
@@ -134,7 +136,7 @@ export async function createTestWithRelations(input: unknown): Promise<TestDto> 
   const test = await getTestWithMetadata(createdId);
 
   if (!test) {
-    throw new Error('Le test créé n\'a pas pu être relu.');
+    throw new Error("Le test créé n'a pas pu être relu.");
   }
 
   return testSchema.parse(test);
@@ -153,8 +155,8 @@ export async function updateTestWithRelations(input: unknown): Promise<TestDto> 
     });
 
     const [domainRecords, tagRecords] = await Promise.all([
-      upsertDomains(tx, payload.domains ?? []),
-      upsertTags(tx, payload.tags ?? []),
+      upsertDomains(tx as DbClient, payload.domains ?? []),
+      upsertTags(tx as DbClient, payload.tags ?? []),
     ]);
 
     await tx
@@ -177,14 +179,14 @@ export async function updateTestWithRelations(input: unknown): Promise<TestDto> 
       })
       .where(eq(tests.id, payload.id));
 
-    await syncDomains(tx, payload.id, domainRecords.map((domain) => domain.id));
-    await syncTags(tx, payload.id, tagRecords.map((tag) => tag.id));
+    await syncDomains(tx as DbClient, payload.id, domainRecords.map((domain) => domain.id));
+    await syncTags(tx as DbClient, payload.id, tagRecords.map((tag) => tag.id));
   });
 
   const test = await getTestWithMetadata(payload.id);
 
   if (!test) {
-    throw new Error('Le test mis à jour n\'a pas pu être relu.');
+    throw new Error("Le test mis à jour n'a pas pu être relu.");
   }
 
   return testSchema.parse(test);
