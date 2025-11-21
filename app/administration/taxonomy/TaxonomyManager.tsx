@@ -113,17 +113,19 @@ function TaxonomyManager() {
       queryClient.setQueryData(['test-taxonomy'], (current?: TaxonomyResponse) => {
         if (!current) return current;
 
-        if (variables.type === 'domain' && result.domain) {
+        if (variables.type === 'domain') {
+          const deletedId = result.domain?.id ?? variables.id;
           return {
             ...current,
-            domains: current.domains.filter((domain) => domain.id !== result.domain.id),
+            domains: current.domains.filter((domain) => domain.id !== deletedId),
           };
         }
 
-        if (variables.type === 'tag' && result.tag) {
+        if (variables.type === 'tag') {
+          const deletedId = result.tag?.id ?? variables.id;
           return {
             ...current,
-            tags: current.tags.filter((tag) => tag.id !== result.tag.id),
+            tags: current.tags.filter((tag) => tag.id !== deletedId),
           };
         }
 
