@@ -1,24 +1,50 @@
 function Header() {
   return (
-    <header className="container header-shell">
-      <div className="glass header-bar">
-        <div className="brand">
-          <div className="brand-mark">OT</div>
-          <div className="brand-copy">
-            <p style={{ color: '#0f172a', fontWeight: 800 }}>Othoutils</p>
-            <small className="text-subtle">Référentiels cliniques validés par des orthophonistes</small>
+    <header className="ph-header" role="banner">
+      <div className="ph-header__bar container">
+        <a className="ph-header__brand" href="/" aria-label="Othoutils, retour à l'accueil">
+          <div className="ph-header__logo" aria-hidden>
+            OT
           </div>
+          <div>
+            <p className="ph-header__name">Othoutils</p>
+            <p className="ph-header__tagline">Ressources cliniques vérifiées par des orthophonistes</p>
+          </div>
+        </a>
+
+        <div className="ph-header__search" role="search">
+          <input
+            type="search"
+            name="search"
+            placeholder="Rechercher un outil, une thématique..."
+            aria-label="Rechercher un outil, une thématique"
+          />
         </div>
-        <nav className="nav">
-          <a href="#catalogue" className="secondary-btn" style={{ padding: '0.55rem 0.9rem' }}>
+
+        <nav className="ph-header__nav" aria-label="Navigation principale">
+          <a className="ph-header__link" href="#catalogue">
             Catalogue
           </a>
-          <a href="#collaboration" className="top-banner__link">
-            Collaboration
+          <a className="ph-header__link" href="#collaboration">
+            Communauté
           </a>
-          <a href="/tools/new" className="top-banner__link">
-            Ajouter un outil
+          <a className="ph-header__link" href="#news">
+            Nouveautés
           </a>
+          <div className="ph-header__menu">
+            <button className="ph-header__link ph-header__menu-toggle" type="button" aria-haspopup="true">
+              Administration
+              <span aria-hidden>▾</span>
+            </button>
+            <div className="ph-header__submenu" aria-label="Menu administration">
+              <a className="ph-header__submenu-link" href="/administration">
+                Tableau de bord
+              </a>
+              <a className="ph-header__submenu-link" href="/tools/new">
+                Ajouter un outil
+              </a>
+            </div>
+          </div>
         </nav>
       </div>
     </header>
