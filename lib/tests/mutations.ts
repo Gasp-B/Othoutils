@@ -95,7 +95,7 @@ export async function createTestWithRelations(input: unknown): Promise<TestDto> 
   const payload = testInputSchema.parse(input);
   const createdId = await getDb().transaction(async (tx) => {
     const slug = await generateUniqueSlug({
-      db: tx,
+      db: tx as unknown as DbClient,
       name: payload.name,
       table: tests,
       slugColumn: tests.slug,
@@ -146,7 +146,7 @@ export async function updateTestWithRelations(input: unknown): Promise<TestDto> 
   const payload = updateTestInputSchema.parse(input);
   await getDb().transaction(async (tx) => {
     const slug = await generateUniqueSlug({
-      db: tx,
+      db: tx as unknown as DbClient,
       name: payload.name,
       table: tests,
       slugColumn: tests.slug,
