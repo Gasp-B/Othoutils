@@ -1,0 +1,133 @@
+import { NextResponse, type NextRequest } from 'next/server';
+import type { NextConfig } from 'next';
+
+const WINDOW_MS = 60_000;
+const MAX_REQUESTS = 100;
+
+const rateLimitStore = new Map<string, { count: number; expires: number }>();
+
+const proxyMatcher = ['/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'];
+
+function getClientKey(request: NextRequest) {
+  const xForwardedFor = request.headers.get('x-forwarded-for');
+  if (xForwardedFor) {
+    return xForwardedFor.split(',')[0]?.trim() ?? 'unknown';
+  }
+
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) {
+    return realIp;
+  }
+
+  const connectingIp = request.headers.get('cf-connecting-ip');
+  if (connectingIp) {
+    return connectingIp;
+  }
+
+  return 'global';
+}
+
+function getUpdatedEntry(key: string) {
+  const now = Date.now();
+  const existing = rateLimitStore.get(key);
+
+  if (!existing || existing.expires < now) {
+    const freshEntry = { count: 0, expires: now + WINDOW_MS };
+    rateLimitStore.set(key, freshEntry);
+    return freshEntry;
+  }
+
+  return existing;
+}
+
+function getConnectSources() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://*.supabase.co';
+  return ["'self'", supabaseUrl].filter(Boolean).join(' ');
+}
+
+function getSecurityHeaders() {
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "font-src 'self' data:",
+    "img-src 'self' data:",
+    "object-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    `connect-src ${getConnectSources()}`,
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+  ].join('; ');
+
+  return [
+    { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+    { key: 'X-Content-Type-Options', value: 'nosniff' },
+    { key: 'X-Frame-Options', value: 'DENY' },
+    { key: 'X-XSS-Protection', value: '0' },
+    { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
+  ];
+}
+
+function applySecurityHeaders(response: NextResponse) {
+  for (const { key, value } of getSecurityHeaders()) {
+    response.headers.set(key, value);
+  }
+}
+
+export function middleware(request: NextRequest) {
+  const key = getClientKey(request);
+  const entry = getUpdatedEntry(key);
+
+  entry.count += 1;
+
+  if (entry.count > MAX_REQUESTS) {
+    const limitedResponse = new NextResponse('Too Many Requests', {
+      status: 429,
+      headers: {
+        'Retry-After': `${Math.ceil((entry.expires - Date.now()) / 1000)}`,
+        'X-RateLimit-Limit': `${MAX_REQUESTS}`,
+        'X-RateLimit-Remaining': '0',
+      },
+    });
+
+    applySecurityHeaders(limitedResponse);
+    return limitedResponse;
+  }
+
+  const response = NextResponse.next();
+  response.headers.set('X-RateLimit-Limit', `${MAX_REQUESTS}`);
+  response.headers.set('X-RateLimit-Remaining', `${Math.max(0, MAX_REQUESTS - entry.count)}`);
+  response.headers.set('X-RateLimit-Reset', `${entry.expires}`);
+
+  applySecurityHeaders(response);
+
+  return response;
+}
+
+export const config = {
+  matcher: proxyMatcher,
+};
+
+export function headers(): NextConfig['headers'] {
+  return [
+    {
+      source: '/(.*)',
+      headers: getSecurityHeaders(),
+    },
+  ];
+}
+
+export function rewrites(): NextConfig['rewrites'] {
+  return [];
+}
+
+export function redirects(): NextConfig['redirects'] {
+  return [];
+}
+
+export const proxyConfig: NextConfig = {
+  headers,
+  rewrites,
+  redirects,
+};

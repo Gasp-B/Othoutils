@@ -1,8 +1,11 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import postgres, { type Sql } from 'postgres';
+
+type PostgresClient = Sql<Record<string, unknown>>;
 
 let cachedDb: PostgresJsDatabase<Record<string, unknown>> | null = null;
-let cachedClient: ReturnType<typeof postgres> | null = null;
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+let cachedClient: PostgresClient | null = null;
 
 export function getDb() {
   if (cachedDb) {
@@ -15,7 +18,8 @@ export function getDb() {
     throw new Error('SUPABASE_DB_URL est requis pour initialiser Drizzle.');
   }
 
-  cachedClient = postgres(connectionString, { prepare: false });
+  cachedClient = postgres<Record<string, unknown>>(connectionString, { prepare: false });
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
   cachedDb = drizzle(cachedClient);
 
   return cachedDb;
