@@ -45,9 +45,6 @@ function Header() {
               </a>
             </div>
           </div>
-          <a className="ph-header__pill" href="/tools/new">
-            Ajouter un outil
-          </a>
         </nav>
       </div>
     </header>
