@@ -58,8 +58,8 @@ export async function createDomain(name: string) {
   return existing;
 }
 
-export async function createTag(label: string) {
-  const normalized = normalizeValue(label);
+export async function createTag(name: string) {
+  const normalized = normalizeValue(name);
   const db = getDb();
 
   const [existingTag] = await db
