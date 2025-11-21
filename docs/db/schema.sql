@@ -77,7 +77,7 @@ CREATE TABLE tests (
 
 CREATE TABLE domains (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
+  label text NOT NULL UNIQUE,
   slug text UNIQUE NOT NULL
 );
 
@@ -89,7 +89,9 @@ CREATE TABLE test_domains (
 
 CREATE TABLE tags (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  label text NOT NULL UNIQUE
+  label text NOT NULL UNIQUE,
+  color_label text,
+  created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
 );
 
 CREATE TABLE test_tags (
