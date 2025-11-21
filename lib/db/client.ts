@@ -1,8 +1,10 @@
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import postgres, { type Sql } from 'postgres';
 
-let cachedDb: PostgresJsDatabase<Record<string, unknown>> | null = null;
-let cachedClient: ReturnType<typeof postgres> | null = null;
+type PostgresClient = Sql;
+
+let cachedDb: PostgresJsDatabase | null = null;
+let cachedClient: PostgresClient | null = null;
 
 export function getDb() {
   if (cachedDb) {

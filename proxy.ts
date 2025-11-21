@@ -1,3 +1,5 @@
+import type { Header, Redirect, Rewrite } from 'next/dist/lib/load-custom-routes';
+import type { NextConfig } from 'next';
 import { NextResponse, type NextRequest } from 'next/server';
 
 const WINDOW_MS = 60_000;
@@ -37,7 +39,42 @@ function getUpdatedEntry(key: string) {
   return existing;
 }
 
-export function middleware(request: NextRequest) {
+function getConnectSources() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://*.supabase.co';
+  return ["'self'", supabaseUrl].filter(Boolean).join(' ');
+}
+
+function getSecurityHeaders() {
+  const contentSecurityPolicy = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "font-src 'self' data:",
+    "img-src 'self' data:",
+    "object-src 'none'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    `connect-src ${getConnectSources()}`,
+    "frame-ancestors 'none'",
+    "form-action 'self'",
+  ].join('; ');
+
+  return [
+    { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+    { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+    { key: 'X-Content-Type-Options', value: 'nosniff' },
+    { key: 'X-Frame-Options', value: 'DENY' },
+    { key: 'X-XSS-Protection', value: '0' },
+    { key: 'Permissions-Policy', value: 'geolocation=(), microphone=(), camera=()' },
+  ];
+}
+
+function applySecurityHeaders(response: NextResponse) {
+  for (const { key, value } of getSecurityHeaders()) {
+    response.headers.set(key, value);
+  }
+}
+
+export function proxy(request: NextRequest) {
   const key = getClientKey(request);
   const entry = getUpdatedEntry(key);
 
@@ -67,29 +104,25 @@ export function middleware(request: NextRequest) {
   return response;
 }
 
-function applySecurityHeaders(response: NextResponse) {
-  const connectSources = ["'self'", process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://*.supabase.co']
-    .filter(Boolean)
-    .join(' ');
-
-  const csp = [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "font-src 'self' data:",
-    "img-src 'self' data:",
-    "object-src 'none'",
-    "script-src 'self'",
-    "style-src 'self' 'unsafe-inline'",
-    `connect-src ${connectSources}`,
-  ].join('; ');
-
-  response.headers.set('Content-Security-Policy', csp);
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  response.headers.set('X-Content-Type-Options', 'nosniff');
-  response.headers.set('X-Frame-Options', 'DENY');
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-}
-
 export const config = {
   matcher: ['/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)'],
+};
+
+export const headers = async (): Promise<Header[]> => {
+  return [
+    {
+      source: '/(.*)',
+      headers: getSecurityHeaders(),
+    },
+  ];
+};
+
+export const rewrites = async (): Promise<Rewrite[]> => [];
+
+export const redirects = async (): Promise<Redirect[]> => [];
+
+export const proxyConfig: NextConfig = {
+  headers,
+  rewrites,
+  redirects,
 };
