@@ -1,32 +1,50 @@
 // app/api/catalogue/route.ts
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createRouteHandlerSupabaseClient } from '@/lib/supabaseClient';
+import type { CatalogueDomain } from '@/lib/navigation/catalogue';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+type DomainRow = {
+  id: string;
+  label: string;
+  slug: string;
+};
 
 export async function GET() {
   try {
-    // Récupère les domaines
-    const { data: domains, error: domainError } = await supabase
+    const supabase = createRouteHandlerSupabaseClient();
+
+    const { data, error } = await supabase
       .from('domains')
       .select('id, label, slug')
       .order('label', { ascending: true });
 
-    if (domainError) {
-      console.error('[GET /api/catalogue] Supabase error:', domainError);
-      return NextResponse.json({ error: 'Database error' }, { status: 500 });
+    if (error) {
+      throw error;
     }
 
-    // Renvoie la forme attendue par ton Header :
-    // { domains: CatalogueDomain[] }
-    return NextResponse.json({
-      domains: domains ?? [],
-    });
-  } catch (err) {
-    console.error('[GET /api/catalogue] Unexpected error:', err);
-    return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    const rows = ((data as unknown as DomainRow[] | null) ?? []);
+
+    const domains: CatalogueDomain[] = rows.map((domain) => ({
+      id: domain.id,
+      label: domain.label,
+      slug: domain.slug,
+      // pour matcher le type CatalogueDomain existant,
+      // on initialise les tags à un tableau vide
+      tags: [],
+    }));
+
+    return NextResponse.json(
+      { domains },
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-store',
+        },
+      },
+    );
+  } catch (error) {
+    console.error('Failed to fetch catalogue domains from Supabase', error);
+    const message = error instanceof Error ? error.message : 'Impossible de récupérer le catalogue';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
