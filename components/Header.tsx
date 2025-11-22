@@ -1,14 +1,58 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CatalogueMegaMenu from '@/components/CatalogueMegaMenu';
-import { getCatalogueTaxonomy } from '@/lib/navigation/catalogue';
+import type { CatalogueDomain } from '@/types/catalogue';
 
-async function Header() {
-  const catalogueDomains = await getCatalogueTaxonomy();
+function Header() {
+  const [catalogueDomains, setCatalogueDomains] = useState<CatalogueDomain[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCatalogue() {
+      try {
+        const res = await fetch('/api/catalogue', {
+          method: 'GET',
+          cache: 'no-store',
+        });
+
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const json = await res.json();
+
+        if (!cancelled) {
+          // On suppose que l’API renvoie { domains: [...] }
+          setCatalogueDomains(json.domains ?? []);
+        }
+      } catch (err) {
+        console.error('[Header] Failed to load catalogue:', err);
+        if (!cancelled) {
+          setError('Impossible de charger le catalogue');
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadCatalogue();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <header className="ph-header" role="banner">
       <div className="ph-header__bar container">
-        <Link className="ph-header__brand" href="/" aria-label="Othoutils, retour à l'accueil">
+        <Link className="ph-header__brand" href="/" aria-label="Othoutils, retour à l&apos;accueil">
           <div className="ph-header__logo" aria-hidden>
             OT
           </div>
@@ -28,7 +72,22 @@ async function Header() {
         </div>
 
         <nav className="ph-header__nav" aria-label="Navigation principale">
-          <CatalogueMegaMenu domains={catalogueDomains} />
+          {loading && (
+            <span className="ph-header__link ph-header__link--muted">
+              Chargement du catalogue…
+            </span>
+          )}
+
+          {!loading && !error && (
+            <CatalogueMegaMenu domains={catalogueDomains} />
+          )}
+
+          {!loading && error && (
+            <span className="ph-header__link ph-header__link--error">
+              {error}
+            </span>
+          )}
+
           <a className="ph-header__link" href="#collaboration">
             Communauté
           </a>
@@ -36,7 +95,11 @@ async function Header() {
             Nouveautés
           </a>
           <div className="ph-header__menu">
-            <button className="ph-header__link ph-header__menu-toggle" type="button" aria-haspopup="true">
+            <button
+              className="ph-header__link ph-header__menu-toggle"
+              type="button"
+              aria-haspopup="true"
+            >
               Administration
               <span aria-hidden>▾</span>
             </button>
@@ -48,7 +111,7 @@ async function Header() {
                 Ajouter un test
               </a>
               <Link className="ph-header__submenu-link" href="/administration/taxonomy">
-                Catégories & tags
+                Catégories &amp; tags
               </Link>
             </div>
           </div>
