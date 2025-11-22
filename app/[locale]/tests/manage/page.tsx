@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { locales, type Locale } from '@/i18n/routing';
 import TestForm from './TestForm';
 import styles from './manage-page.module.css';
+import { locales, type Locale } from '@/i18n/routing';
 
 type ManagePageProps = {
   params: Promise<{ locale: string }>;

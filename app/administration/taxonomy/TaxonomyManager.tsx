@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,7 +23,7 @@ async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit) {
     return await fetch(input, { ...init, signal: controller.signal });
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('Le chargement a expiré, veuillez réessayer.');
+      throw new Error('timeout');
     }
 
     throw error;
@@ -35,7 +36,7 @@ async function fetchTaxonomy() {
   const response = await fetchWithTimeout('/api/tests/taxonomy', { cache: 'no-store' });
 
   if (!response.ok) {
-    throw new Error('Impossible de récupérer les domaines et tags');
+    throw new Error('fetchTaxonomy');
   }
 
   return (await response.json()) as TaxonomyResponse;
@@ -50,7 +51,7 @@ async function createTaxonomyItem(payload: TaxonomyMutationInput) {
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(json.error ?? 'Impossible de créer cet élément');
+    throw new Error(json.error ?? 'createItem');
   }
 
   return response.json();
@@ -65,7 +66,7 @@ async function deleteTaxonomyItem(payload: TaxonomyDeletionInput) {
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(json.error ?? 'Impossible de supprimer cet élément');
+    throw new Error(json.error ?? 'deleteItem');
   }
 
   return response.json();
@@ -73,6 +74,8 @@ async function deleteTaxonomyItem(payload: TaxonomyDeletionInput) {
 
 function TaxonomyManager() {
   const queryClient = useQueryClient();
+  const t = useTranslations('TaxonomyAdmin.manager');
+  const feedback = useTranslations('TaxonomyAdmin.feedback');
   const { data, isLoading, isError, error } = useQuery({ queryKey: taxonomyQueryKey, queryFn: fetchTaxonomy });
   const [domainInput, setDomainInput] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -80,6 +83,31 @@ function TaxonomyManager() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const errorTranslationKeyByMessage: Record<string, string> = {
+    timeout: 'errors.timeout',
+    fetchTaxonomy: 'errors.fetch',
+    'Impossible de récupérer les domaines et tags': 'errors.fetch',
+    'Unable to load domains and tags': 'errors.fetch',
+    createItem: 'errors.create',
+    'Impossible de créer cet élément': 'errors.create',
+    'Unable to create this item': 'errors.create',
+    deleteItem: 'errors.delete',
+    'Impossible de supprimer cet élément': 'errors.delete',
+    'Unable to delete this item': 'errors.delete',
+  };
+
+  const translateError = (message?: string | null) => {
+    if (!message) return feedback('errors.generic');
+
+    const normalized = message.trim();
+    const key = errorTranslationKeyByMessage[normalized];
+
+    if (key) {
+      return feedback(key);
+    }
+
+    return feedback('errors.genericWithReason', { reason: normalized });
+  };
 
   const normalizedDomainInput = domainInput.trim();
   const normalizedTagInput = tagInput.trim();
@@ -106,8 +134,8 @@ function TaxonomyManager() {
       void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey });
       showToast(
         variables.type === 'domain'
-          ? 'Le domaine a été enregistré et sera disponible dans le formulaire de test.'
-          : 'Le tag a été enregistré et sera disponible dans le formulaire de test.',
+          ? feedback('toasts.domainCreated')
+          : feedback('toasts.tagCreated'),
       );
       setErrorMessage(null);
       if (variables.type === 'domain') {
@@ -118,8 +146,8 @@ function TaxonomyManager() {
       }
     },
     onError: (mutationError) => {
-      const message = mutationError instanceof Error ? mutationError.message : 'Impossible de finaliser la création';
-      setErrorMessage(message);
+      const message = mutationError instanceof Error ? mutationError.message : null;
+      setErrorMessage(translateError(message));
     },
   });
 
@@ -130,13 +158,13 @@ function TaxonomyManager() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey });
-      showToast('Élément supprimé. Les listes seront actualisées.');
+      showToast(feedback('toasts.deleted'));
       setErrorMessage(null);
       setDeletingId(null);
     },
     onError: (mutationError) => {
-      const message = mutationError instanceof Error ? mutationError.message : 'Impossible de supprimer cet élément';
-      setErrorMessage(message);
+      const message = mutationError instanceof Error ? mutationError.message : null;
+      setErrorMessage(translateError(message));
       setDeletingId(null);
     },
   });
@@ -173,29 +201,25 @@ function TaxonomyManager() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Créer un domaine</CardTitle>
-          <p className={`helper-text ${styles.helperTight}`}>
-            Les domaines alimentent la liste « Domaines » du formulaire Ajouter / Éditer un test.
-          </p>
+          <CardTitle>{t('domains.title')}</CardTitle>
+          <p className={`helper-text ${styles.helperTight}`}>{t('domains.helper')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="notion-toolbar">
               <div>
-                <p className={styles.toolbarTitle}>Domaines</p>
+                <p className={styles.toolbarTitle}>{t('domains.toolbarTitle')}</p>
                 <p className={`helper-text ${styles.helperTight}`}>
-                  {sortedDomains.length} domaine{sortedDomains.length > 1 ? 's' : ''}
+                  {t('domains.count', { count: sortedDomains.length })}
                 </p>
               </div>
             </div>
             <Separator />
-            {isLoading && <p className="helper-text">Chargement des domaines…</p>}
-            {isError && <p className="error-text">{error instanceof Error ? error.message : 'Erreur inconnue'}</p>}
+            {isLoading && <p className="helper-text">{t('domains.loading')}</p>}
+            {isError && <p className="error-text">{translateError(error instanceof Error ? error.message : null)}</p>}
             {!isLoading && !isError && (
               <div className="space-y-2">
-                {sortedDomains.length === 0 && (
-                  <p className="helper-text">Aucun domaine enregistré pour le moment.</p>
-                )}
+                {sortedDomains.length === 0 && <p className="helper-text">{t('domains.empty')}</p>}
                 {sortedDomains.map((domain) => (
                   <div key={domain.id} className={`notion-toolbar__group ${styles.toolbarGroupJustify}`}>
                     <span>{domain.label}</span>
@@ -203,11 +227,13 @@ function TaxonomyManager() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      aria-label={`Supprimer ${domain.label}`}
+                      aria-label={t('domains.actions.deleteAria', { label: domain.label })}
                       onClick={() => deleteMutation.mutate({ type: 'domain', id: domain.id })}
                       disabled={deleteMutation.isPending && deletingId === domain.id}
                     >
-                      {deleteMutation.isPending && deletingId === domain.id ? 'Suppression…' : 'Supprimer'}
+                      {deleteMutation.isPending && deletingId === domain.id
+                        ? t('domains.actions.deleting')
+                        : t('domains.actions.delete')}
                     </Button>
                   </div>
                 ))}
@@ -217,18 +243,16 @@ function TaxonomyManager() {
 
           <Separator />
 
-          <Label htmlFor="new-domain">Nom du domaine</Label>
+          <Label htmlFor="new-domain">{t('domains.inputLabel')}</Label>
           <Input
             id="new-domain"
-            placeholder="Ex. Phonologie"
+            placeholder={t('domains.inputPlaceholder')}
             value={domainInput}
             onChange={(event) => setDomainInput(event.target.value)}
             disabled={createMutation.isPending}
           />
           {domainExists && (
-            <p className={`error-text ${styles.helperTight}`}>
-              Ce domaine existe déjà.
-            </p>
+            <p className={`error-text ${styles.helperTight}`}>{t('domains.exists')}</p>
           )}
           <div className="notion-toolbar__group">
             <Button
@@ -236,10 +260,10 @@ function TaxonomyManager() {
               onClick={() => createMutation.mutate({ type: 'domain', value: normalizedDomainInput })}
               disabled={!normalizedDomainInput || createMutation.isPending || domainExists}
             >
-              {createMutation.isPending ? 'Enregistrement…' : 'Ajouter le domaine'}
+              {createMutation.isPending ? t('domains.actions.pending') : t('domains.actions.add')}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setDomainInput('')}>
-              Réinitialiser
+              {t('actions.reset')}
             </Button>
           </div>
         </CardContent>
@@ -247,27 +271,25 @@ function TaxonomyManager() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Créer un tag</CardTitle>
-          <p className={`helper-text ${styles.helperTight}`}>
-            Les tags enrichissent la recherche et les filtres dans les fiches tests.
-          </p>
+          <CardTitle>{t('tags.title')}</CardTitle>
+          <p className={`helper-text ${styles.helperTight}`}>{t('tags.helper')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <div className="notion-toolbar">
               <div>
-                <p className={styles.toolbarTitle}>Tags</p>
+                <p className={styles.toolbarTitle}>{t('tags.toolbarTitle')}</p>
                 <p className={`helper-text ${styles.helperTight}`}>
-                  {sortedTags.length} tag{sortedTags.length > 1 ? 's' : ''}
+                  {t('tags.count', { count: sortedTags.length })}
                 </p>
               </div>
             </div>
             <Separator />
-            {isLoading && <p className="helper-text">Chargement des tags…</p>}
-            {isError && <p className="error-text">{error instanceof Error ? error.message : 'Erreur inconnue'}</p>}
+            {isLoading && <p className="helper-text">{t('tags.loading')}</p>}
+            {isError && <p className="error-text">{translateError(error instanceof Error ? error.message : null)}</p>}
             {!isLoading && !isError && (
               <div className="space-y-2">
-                {sortedTags.length === 0 && <p className="helper-text">Aucun tag enregistré pour le moment.</p>}
+                {sortedTags.length === 0 && <p className="helper-text">{t('tags.empty')}</p>}
                 {sortedTags.map((tag) => (
                   <div key={tag.id} className={`notion-toolbar__group ${styles.toolbarGroupJustify}`}>
                     <span>{tag.label}</span>
@@ -275,11 +297,13 @@ function TaxonomyManager() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      aria-label={`Supprimer ${tag.label}`}
+                      aria-label={t('tags.actions.deleteAria', { label: tag.label })}
                       onClick={() => deleteMutation.mutate({ type: 'tag', id: tag.id })}
                       disabled={deleteMutation.isPending && deletingId === tag.id}
                     >
-                      {deleteMutation.isPending && deletingId === tag.id ? 'Suppression…' : 'Supprimer'}
+                      {deleteMutation.isPending && deletingId === tag.id
+                        ? t('tags.actions.deleting')
+                        : t('tags.actions.delete')}
                     </Button>
                   </div>
                 ))}
@@ -289,18 +313,16 @@ function TaxonomyManager() {
 
           <Separator />
 
-          <Label htmlFor="new-tag">Nom du tag</Label>
+          <Label htmlFor="new-tag">{t('tags.inputLabel')}</Label>
           <Input
             id="new-tag"
-            placeholder="Ex. Bilan rapide"
+            placeholder={t('tags.inputPlaceholder')}
             value={tagInput}
             onChange={(event) => setTagInput(event.target.value)}
             disabled={createMutation.isPending}
           />
           {tagExists && (
-            <p className={`error-text ${styles.helperTight}`}>
-              Ce tag existe déjà.
-            </p>
+            <p className={`error-text ${styles.helperTight}`}>{t('tags.exists')}</p>
           )}
           <div className="notion-toolbar__group">
             <Button
@@ -308,10 +330,10 @@ function TaxonomyManager() {
               onClick={() => createMutation.mutate({ type: 'tag', value: normalizedTagInput })}
               disabled={!normalizedTagInput || createMutation.isPending || tagExists}
             >
-              {createMutation.isPending ? 'Enregistrement…' : 'Ajouter le tag'}
+              {createMutation.isPending ? t('tags.actions.pending') : t('tags.actions.add')}
             </Button>
             <Button type="button" variant="ghost" onClick={() => setTagInput('')}>
-              Réinitialiser
+              {t('actions.reset')}
             </Button>
           </div>
         </CardContent>

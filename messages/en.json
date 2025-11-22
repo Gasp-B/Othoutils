@@ -305,5 +305,228 @@
       "description": "Description coming soon.",
       "objective": "Clinical objective to be documented."
     }
+  },
+  "ManageTests": {
+    "metadata": {
+      "title": "Manage tests | Othoutils",
+      "description": "Add or update a test with its domains and tags."
+    },
+    "page": {
+      "sectionLabel": "Create or update a test",
+      "title": "Add / Edit a test",
+      "lead": "Use this form to create a test or edit an existing sheet, including its associated tags and domains."
+    },
+    "form": {
+      "toolbar": {
+        "sheetLabel": "Sheet",
+        "newTest": "New test",
+        "editBadge": "Edit mode",
+        "newBadge": "New sheet",
+        "reset": "Reset"
+      },
+      "actions": {
+        "create": "Create the test",
+        "update": "Update",
+        "pending": "Saving…"
+      },
+      "fields": {
+        "name": {
+          "placeholder": "Test name (e.g., Language Assessment)"
+        },
+        "shortDescription": {
+          "label": "Long description",
+          "placeholder": "Introduce the tool and what makes it unique."
+        },
+        "objective": {
+          "label": "Objective",
+          "placeholder": "What does this test measure? In which context should it be used?"
+        },
+        "notes": {
+          "label": "Internal notes",
+          "placeholder": "Internal observations or links to related resources."
+        },
+        "populationDetailed": {
+          "label": "Target audience",
+          "placeholder": "Add more detail about the audience if needed"
+        },
+        "materialsDetailed": {
+          "label": "Detailed materials",
+          "placeholder": "List the precise materials, grids, or supporting documents required."
+        },
+        "age": {
+          "label": "Age (months)",
+          "minPlaceholder": "36",
+          "maxPlaceholder": "120"
+        },
+        "duration": {
+          "label": "Duration",
+          "placeholder": "45",
+          "helper": "Average duration in minutes."
+        },
+        "population": {
+          "label": "Population",
+          "placeholder": "Children, teenagers, adults…"
+        },
+        "publisher": {
+          "label": "Publisher",
+          "placeholder": "Publishing house"
+        },
+        "priceRange": {
+          "placeholder": "Price range"
+        },
+        "purchase": {
+          "label": "Purchase"
+        },
+        "buyLink": {
+          "placeholder": "Purchase link (URL)"
+        },
+        "materials": {
+          "placeholder": "Required materials"
+        },
+        "standardization": {
+          "label": "Standardization",
+          "standardized": "Standardized",
+          "nonStandardized": "Non-standardized",
+          "helper": "Toggle according to the protocol type."
+        },
+        "domains": {
+          "label": "Domains",
+          "description": "Refine the sheet by adding one or more domains.",
+          "placeholder": "Search for a domain"
+        },
+        "tags": {
+          "label": "Tags",
+          "description": "Add keywords to improve search.",
+          "placeholder": "Search for a tag"
+        }
+      },
+      "sections": {
+        "detailedSummary": {
+          "title": "Detailed summary"
+        },
+        "bibliography": {
+          "title": "Bibliography",
+          "helper": "Add links to useful articles, videos, or references.",
+          "empty": "No link yet. Add your first reference below."
+        },
+        "additionalInfo": {
+          "title": "Additional information"
+        },
+        "properties": {
+          "title": "Properties",
+          "helper": "Think about key properties as in a Notion sheet.",
+          "targetingTitle": "Targeting & duration",
+          "publishingTitle": "Edition & access"
+        },
+        "taxonomy": {
+          "title": "Taxonomy"
+        }
+      },
+      "bibliography": {
+        "entryLabel": "Title or source",
+        "entryPlaceholder": "Article, video, book…",
+        "linkLabel": "Link",
+        "linkPlaceholder": "https://example.com/resource",
+        "remove": "Delete",
+        "addTitle": "Add a reference",
+        "addPlaceholder": "Resource title",
+        "addUrlPlaceholder": "https://example.com/resource",
+        "addButton": "Add",
+        "addHelper": "Provide a short title and a valid URL. Links will be stored with the test."
+      },
+      "multiSelect": {
+        "placeholder": "Select",
+        "dialogLabel": "Select {label}",
+        "dialogTitle": "Select {label}",
+        "filterHelper": "Type to filter, click to add or remove.",
+        "searchPlaceholder": "Search…",
+        "filterAria": "Filter {label}",
+        "clear": "Clear",
+        "emptySelection": "No item selected yet.",
+        "emptyResults": "No result",
+        "add": "Add",
+        "remove": "Remove"
+      }
+    },
+    "feedback": {
+      "errors": {
+        "generic": "An error occurred. Please try again.",
+        "genericWithReason": "An error occurred: {reason}",
+        "fetchTests": "Unable to retrieve the tests.",
+        "fetchTaxonomy": "Unable to load domains and tags.",
+        "create": "Unable to create the test.",
+        "update": "Unable to update the test."
+      },
+      "success": {
+        "saved": "The test and its relations have been saved."
+      }
+    }
+  },
+  "TaxonomyAdmin": {
+    "metadata": {
+      "title": "Manage categories and tags | Othoutils",
+      "description": "Add, delete, or rename test domains and tags."
+    },
+    "page": {
+      "sectionLabel": "Administration",
+      "title": "Categories & tags",
+      "lead": "Centralize the list of domains and tags used in the test sheet. Items created here are immediately available in the \"Add / Edit a test\" form."
+    },
+    "manager": {
+      "actions": {
+        "reset": "Reset"
+      },
+      "domains": {
+        "title": "Create a domain",
+        "helper": "Domains feed the \"Domains\" list in the Add / Edit a test form.",
+        "toolbarTitle": "Domains",
+        "count": "{count, plural, one {{count} domain} other {{count} domains}}",
+        "loading": "Loading domains…",
+        "empty": "No domain saved yet.",
+        "inputLabel": "Domain name",
+        "inputPlaceholder": "e.g., Phonology",
+        "exists": "This domain already exists.",
+        "actions": {
+          "add": "Add domain",
+          "pending": "Saving…",
+          "delete": "Delete",
+          "deleting": "Deleting…",
+          "deleteAria": "Delete {label}"
+        }
+      },
+      "tags": {
+        "title": "Create a tag",
+        "helper": "Tags enrich search and filters in test sheets.",
+        "toolbarTitle": "Tags",
+        "count": "{count, plural, one {{count} tag} other {{count} tags}}",
+        "loading": "Loading tags…",
+        "empty": "No tag saved yet.",
+        "inputLabel": "Tag name",
+        "inputPlaceholder": "e.g., Quick assessment",
+        "exists": "This tag already exists.",
+        "actions": {
+          "add": "Add tag",
+          "pending": "Saving…",
+          "delete": "Delete",
+          "deleting": "Deleting…",
+          "deleteAria": "Delete {label}"
+        }
+      }
+    },
+    "feedback": {
+      "errors": {
+        "generic": "An error occurred. Please try again.",
+        "genericWithReason": "An error occurred: {reason}",
+        "timeout": "The request timed out, please try again.",
+        "fetch": "Unable to retrieve domains and tags.",
+        "create": "Unable to create this item.",
+        "delete": "Unable to delete this item."
+      },
+      "toasts": {
+        "domainCreated": "The domain has been saved and will be available in the test form.",
+        "tagCreated": "The tag has been saved and will be available in the test form.",
+        "deleted": "Item removed. Lists will refresh."
+      }
+    }
   }
 }

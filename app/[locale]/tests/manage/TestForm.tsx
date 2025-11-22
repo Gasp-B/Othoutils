@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,6 +51,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, cop
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [popupPosition, setPopupPosition] = useState<PopupPosition>(null);
+  const t = useTranslations('ManageTests.form.multiSelect');
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -166,7 +167,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, cop
       >
         <div className={styles.multiSelectTokens}>
           {values.length === 0 ? (
-            <span className="text-subtle">{placeholder ?? copy.placeholder}</span>
+            <span className="text-subtle">{placeholder ?? t('placeholder')}</span>
           ) : (
             values.map((value) => (
               <Badge
@@ -198,11 +199,11 @@ function MultiSelect({ id, label, description, placeholder, options, values, cop
             style={popupPosition ? { top: popupPosition.top, left: popupPosition.left, width: popupPosition.width } : undefined}
             role="dialog"
             aria-modal="true"
-            aria-label={copy.dialogLabel}
+            aria-label={t('dialogLabel', { label })}
           >
             <div className={styles.popupHeader}>
-              <div className={styles.popupTitle}>{copy.dialogTitle}</div>
-              <p className="helper-text">{copy.dialogHelper}</p>
+              <div className={styles.popupTitle}>{t('dialogTitle', { label })}</div>
+              <p className="helper-text">{t('filterHelper')}</p>
             </div>
 
             <div className={styles.searchBar}>
@@ -210,19 +211,19 @@ function MultiSelect({ id, label, description, placeholder, options, values, cop
                 ref={searchInputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={placeholder ?? copy.searchPlaceholder}
-                aria-label={copy.searchAria}
+                placeholder={placeholder ?? t('searchPlaceholder')}
+                aria-label={t('filterAria', { label })}
               />
               {query ? (
                 <Button variant="ghost" size="sm" type="button" onClick={() => setQuery('')}>
-                  {copy.clear}
+                  {t('clear')}
                 </Button>
               ) : null}
             </div>
 
             <div className={styles.selectedBadges}>
               {selectedOptions.length === 0 ? (
-                <p className="helper-text">{copy.emptySelection}</p>
+                <p className="helper-text">{t('emptySelection')}</p>
               ) : (
                 selectedOptions.map((option) => (
                   <Badge
@@ -240,7 +241,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, cop
 
             <div className={styles.optionsList}>
               {filtered.length === 0 ? (
-                <p className={styles.emptyState}>{copy.emptyResults}</p>
+                <p className={styles.emptyState}>{t('emptyResults')}</p>
               ) : (
                 filtered.map((option) => {
                   const active = values.includes(option.value);
@@ -252,7 +253,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, cop
                       onClick={() => toggleValue(option.value)}
                     >
                       <span className={styles.optionLabel}>{option.label}</span>
-                      <span className={styles.optionBadge}>{active ? copy.remove : copy.add}</span>
+                      <span className={styles.optionBadge}>{active ? t('remove') : t('add')}</span>
                     </button>
                   );
                 })
@@ -319,11 +320,11 @@ const defaultValues: FormValues = {
   bibliography: [],
 };
 
-async function fetchTests(errorMessage: string) {
+async function fetchTests() {
   const response = await fetch('/api/tests');
 
   if (!response.ok) {
-    throw new Error(errorMessage);
+    throw new Error('fetchTests');
   }
 
   const json = (await response.json()) as ApiResponse;
@@ -331,17 +332,16 @@ async function fetchTests(errorMessage: string) {
   return parsed.tests;
 }
 
-async function fetchTaxonomy(errorMessage: string) {
+async function fetchTaxonomy() {
   const response = await fetch('/api/tests/taxonomy');
 
   if (!response.ok) {
-    throw new Error(errorMessage);
+    throw new Error('fetchTaxonomy');
   }
 
   const json = await response.json();
   return taxonomyResponseSchema.parse(json);
 }
-
 async function createTest(payload: FormValues, fallbackMessage: string) {
   const response = await fetch('/api/tests', {
     method: 'POST',
@@ -351,7 +351,7 @@ async function createTest(payload: FormValues, fallbackMessage: string) {
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as ApiResponse;
-    throw new Error(json.error ?? fallbackMessage);
+    throw new Error(json.error ?? 'createTest');
   }
 
   return (await response.json()) as ApiResponse;
@@ -366,7 +366,7 @@ async function updateTest(payload: FormValues, fallbackMessage: string) {
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as ApiResponse;
-    throw new Error(json.error ?? fallbackMessage);
+    throw new Error(json.error ?? 'updateTest');
   }
 
   return (await response.json()) as ApiResponse;
@@ -375,72 +375,39 @@ async function updateTest(payload: FormValues, fallbackMessage: string) {
 function TestForm() {
   const t = useTranslations('TestsForm');
   const queryClient = useQueryClient();
-
-  const numberMessage = t('validation.number');
-  const urlMessage = t('validation.url');
-
-const numericNullableInt = z
-  .number({ error: numberMessage })
-  .refine((value) => Number.isFinite(value), { error: numberMessage })
-  .int({ error: numberMessage })
-  .nullable()
-  .optional();
-
-const formSchema = useMemo(
-  () =>
-    formSchemaBase.extend({
-      id: z.string().uuid().optional(),
-      name: z.string().min(1, { message: t('validation.nameRequired') }),
-
-      shortDescription: z.string().nullable().optional(),
-      objective: z.string().nullable().optional(),
-
-      ageMinMonths: numericNullableInt,
-      ageMaxMonths: numericNullableInt,
-      durationMinutes: numericNullableInt,
-
-      population: z.string().nullable().optional(),
-      materials: z.string().nullable().optional(),
-      isStandardized: z.boolean(),
-      publisher: z.string().nullable().optional(),
-      priceRange: z.string().nullable().optional(),
-
-      buyLink: z
-        .string({ error: urlMessage })
-        .url({ message: urlMessage })
-        .nullable()
-        .optional(),
-
-      notes: z.string().nullable().optional(),
-
-      domains: z.array(z.string()),
-      tags: z.array(z.string()),
-
-      bibliography: z
-        .array(
-          z.object({
-            label: z.string().min(1, {
-              message: t('validation.bibliographyLabel'),
-            }),
-            url: z.string({ error: urlMessage }).url({
-              message: urlMessage,
-            }),
-          }),
-        )
-        .default([])
-        .optional(),
-    }),
-  [numberMessage, urlMessage, t],
-);
-
-
-  const taxonomyQueryFn = useCallback(() => fetchTaxonomy(t('states.loadTaxonomyError')), [t]);
-  const testsQueryFn = useCallback(() => fetchTests(t('states.loadTestsError')), [t]);
-
-  const { data: taxonomy } = useQuery({ queryKey: ['test-taxonomy'], queryFn: taxonomyQueryFn });
-  const { data: tests } = useQuery({ queryKey: ['tests'], queryFn: testsQueryFn });
+  const form = useTranslations('ManageTests.form');
+  const feedback = useTranslations('ManageTests.feedback');
+  const { data: taxonomy } = useQuery({ queryKey: ['test-taxonomy'], queryFn: fetchTaxonomy });
+  const { data: tests } = useQuery({ queryKey: ['tests'], queryFn: fetchTests });
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [newBibliography, setNewBibliography] = useState({ label: '', url: '' });
+  const errorTranslationKeyByMessage: Record<string, string> = {
+    fetchTests: 'errors.fetchTests',
+    'Impossible de récupérer les tests': 'errors.fetchTests',
+    'Unable to retrieve tests': 'errors.fetchTests',
+    fetchTaxonomy: 'errors.fetchTaxonomy',
+    'Impossible de charger les domaines et tags': 'errors.fetchTaxonomy',
+    'Unable to load domains and tags': 'errors.fetchTaxonomy',
+    createTest: 'errors.create',
+    'Impossible de créer le test': 'errors.create',
+    'Unable to create the test': 'errors.create',
+    updateTest: 'errors.update',
+    'Impossible de mettre à jour le test': 'errors.update',
+    'Unable to update the test': 'errors.update',
+  };
+
+  const translateHandlerError = (message?: string | null) => {
+    if (!message) return feedback('errors.generic');
+
+    const normalizedMessage = message.trim();
+    const translationKey = errorTranslationKeyByMessage[normalizedMessage];
+
+    if (translationKey) {
+      return feedback(translationKey);
+    }
+
+    return feedback('errors.genericWithReason', { reason: normalizedMessage });
+  };
 
   const {
     register,
@@ -450,7 +417,7 @@ const formSchema = useMemo(
     watch,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchemaBase),
     defaultValues,
     mode: 'onBlur',
   });
@@ -550,12 +517,12 @@ const formSchema = useMemo(
   const [submitLabel, submitDisabled] = useMemo(() => {
     const pending = createMutation.isPending || updateMutation.isPending;
     const label = pending
-      ? t('toolbar.submit.saving')
+      ? form('actions.pending')
       : selectedTestId
-        ? t('toolbar.submit.update')
-        : t('toolbar.submit.create');
+        ? form('actions.update')
+        : form('actions.create');
     return [label, pending];
-  }, [createMutation.isPending, selectedTestId, t, updateMutation.isPending]);
+  }, [createMutation.isPending, form, selectedTestId, updateMutation.isPending]);
 
   const onSubmit = handleSubmit((values) => {
     const payload: FormValues = {
@@ -624,21 +591,21 @@ const formSchema = useMemo(
   <form className="notion-form" onSubmit={(event) => void onSubmit(event)}>
     <div className="notion-toolbar">
       <div className="notion-toolbar__group">
-        <Label htmlFor="test-selector">{t('toolbar.sheetLabel')}</Label>
+        <Label htmlFor="test-selector">{form('toolbar.sheetLabel')}</Label>
         <Select
           id="test-selector"
           value={selectedTestId ?? ''}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => setSelectedTestId(event.target.value || null)}
           aria-label={t('toolbar.selectorAria')}
         >
-          <option value="">{t('toolbar.selectorPlaceholder')}</option>
+          <option value="">{form('toolbar.newTest')}</option>
           {(tests ?? []).map((test) => (
             <option key={test.id} value={test.id}>
               {test.name}
             </option>
           ))}
         </Select>
-        {selectedTestId ? <Badge variant="outline">{t('toolbar.editBadge')}</Badge> : <Badge>{t('toolbar.newBadge')}</Badge>}
+        {selectedTestId ? <Badge variant="outline">{form('toolbar.editBadge')}</Badge> : <Badge>{form('toolbar.newBadge')}</Badge>}
       </div>
 
       <div className="notion-toolbar__group">
@@ -651,7 +618,7 @@ const formSchema = useMemo(
             setNewBibliography({ label: '', url: '' });
           }}
         >
-          {t('toolbar.reset')}
+          {form('toolbar.reset')}
         </Button>
         <Button type="submit" disabled={submitDisabled} aria-busy={submitDisabled}>
           {submitLabel}
@@ -662,8 +629,7 @@ const formSchema = useMemo(
     <Input
       id="name"
       className="notion-title-input"
-      placeholder={t('fields.name.placeholder')}
-      aria-label={t('fields.name.aria')}
+      placeholder={form('fields.name.placeholder')}
       {...register('name')}
     />
     {errors.name && <p className="error-text">{errors.name.message}</p>}
@@ -673,32 +639,32 @@ const formSchema = useMemo(
       {/* Résumé détaillé */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('sections.summary.title')}</CardTitle>
+          <CardTitle>{form('sections.detailedSummary.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="property-value">
-            <Label htmlFor="shortDescription">{t('sections.summary.descriptionLabel')}</Label>
+            <Label htmlFor="shortDescription">{form('fields.shortDescription.label')}</Label>
             <Textarea
               id="shortDescription"
-              placeholder={t('fields.shortDescription.placeholder')}
+              placeholder={form('fields.shortDescription.placeholder')}
               {...register('shortDescription', { setValueAs: (value) => (value === '' ? null : value) })}
             />
           </div>
           <Separator />
           <div className="property-value">
-            <Label htmlFor="objective">{t('sections.summary.objectiveLabel')}</Label>
+            <Label htmlFor="objective">{form('fields.objective.label')}</Label>
             <Textarea
               id="objective"
-              placeholder={t('fields.objective.placeholder')}
+              placeholder={form('fields.objective.placeholder')}
               {...register('objective', { setValueAs: (value) => (value === '' ? null : value) })}
             />
           </div>
           <Separator />
           <div className="property-value">
-            <Label htmlFor="notes">{t('sections.summary.notesLabel')}</Label>
+            <Label htmlFor="notes">{form('fields.notes.label')}</Label>
             <Textarea
               id="notes"
-              placeholder={t('fields.notes.placeholder')}
+              placeholder={form('fields.notes.placeholder')}
               {...register('notes', { setValueAs: (value) => (value === '' ? null : value) })}
             />
           </div>
@@ -708,38 +674,38 @@ const formSchema = useMemo(
       {/* Bibliographie (2ème bloc) */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('sections.bibliography.title')}</CardTitle>
-          <p className="helper-text">{t('sections.bibliography.helper')}</p>
+          <CardTitle>{form('sections.bibliography.title')}</CardTitle>
+          <p className="helper-text">{form('sections.bibliography.helper')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
             {(currentBibliography ?? []).length === 0 && (
               <p className={`helper-text ${styles.helperTight}`}>
-                {t('sections.bibliography.empty')}
+                {form('sections.bibliography.empty')}
               </p>
             )}
 
             {(currentBibliography ?? []).map((entry, index) => (
               <div key={`${entry.label}-${index}`} className={`property-value ${styles.bibliographyEntry}`}>
-                <Label htmlFor={`bibliography-label-${index}`}>{t('sections.bibliography.entryTitleLabel')}</Label>
+                <Label htmlFor={`bibliography-label-${index}`}>{form('bibliography.entryLabel')}</Label>
                 <Input
                   id={`bibliography-label-${index}`}
                   value={entry.label}
                   onChange={(event) => updateBibliographyItem(index, 'label', event.target.value)}
-                  placeholder={t('sections.bibliography.entryTitlePlaceholder')}
+                  placeholder={form('bibliography.entryPlaceholder')}
                 />
                 {errors.bibliography?.[index]?.label && (
                   <p className="error-text">{errors.bibliography?.[index]?.label?.message}</p>
                 )}
 
-                <Label htmlFor={`bibliography-url-${index}`}>{t('sections.bibliography.entryUrlLabel')}</Label>
+                <Label htmlFor={`bibliography-url-${index}`}>{form('bibliography.linkLabel')}</Label>
                 <div className="notion-toolbar__group">
                   <Input
                     id={`bibliography-url-${index}`}
                     type="url"
                     value={entry.url}
                     onChange={(event) => updateBibliographyItem(index, 'url', event.target.value)}
-                    placeholder={t('sections.bibliography.entryUrlPlaceholder')}
+                    placeholder={form('bibliography.linkPlaceholder')}
                   />
                   <Button
                     type="button"
@@ -747,7 +713,7 @@ const formSchema = useMemo(
                     size="sm"
                     onClick={() => removeBibliographyItem(index)}
                   >
-                    {t('sections.bibliography.removeEntry')}
+                    {form('bibliography.remove')}
                   </Button>
                 </div>
                 {errors.bibliography?.[index]?.url && (
@@ -759,10 +725,10 @@ const formSchema = useMemo(
           </div>
 
           <div className={`property-value ${styles.bibliographyCreate}`}>
-            <Label htmlFor="bibliography-new-label">{t('sections.bibliography.addReferenceLabel')}</Label>
+            <Label htmlFor="bibliography-new-label">{form('bibliography.addTitle')}</Label>
             <Input
               id="bibliography-new-label"
-              placeholder={t('sections.bibliography.newEntryTitlePlaceholder')}
+              placeholder={form('bibliography.addPlaceholder')}
               value={newBibliography.label}
               onChange={(event) => setNewBibliography((prev) => ({ ...prev, label: event.target.value }))}
             />
@@ -770,16 +736,16 @@ const formSchema = useMemo(
               <Input
                 id="bibliography-new-url"
                 type="url"
-                placeholder={t('sections.bibliography.newEntryUrlPlaceholder')}
+                placeholder={form('bibliography.addUrlPlaceholder')}
                 value={newBibliography.url}
                 onChange={(event) => setNewBibliography((prev) => ({ ...prev, url: event.target.value }))}
               />
               <Button type="button" variant="outline" size="sm" onClick={addBibliographyItem}>
-                {t('sections.bibliography.addButton')}
+                {form('bibliography.addButton')}
               </Button>
             </div>
             <p className={`helper-text ${styles.helperTight}`}>
-              {t('sections.bibliography.addHelper')}
+              {form('bibliography.addHelper')}
             </p>
           </div>
         </CardContent>
@@ -788,14 +754,14 @@ const formSchema = useMemo(
       {/* Informations complémentaires (3e carte dans la grid, mais avant Propriétés) */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('sections.additionalInfo.title')}</CardTitle>
+          <CardTitle>{form('sections.additionalInfo.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="property-value">
-            <Label htmlFor="population-secondary">{t('sections.additionalInfo.populationLabel')}</Label>
+            <Label htmlFor="population-secondary">{form('fields.populationDetailed.label')}</Label>
             <Input
               id="population-secondary"
-              placeholder={t('sections.additionalInfo.populationPlaceholder')}
+              placeholder={form('fields.populationDetailed.placeholder')}
               value={populationValue ?? ''}
               onChange={(event) =>
                 setValue('population', event.target.value === '' ? null : event.target.value, { shouldDirty: true })
@@ -804,10 +770,10 @@ const formSchema = useMemo(
           </div>
           <Separator />
           <div className="property-value">
-            <Label htmlFor="materials-secondary">{t('sections.additionalInfo.materialsLabel')}</Label>
+            <Label htmlFor="materials-secondary">{form('fields.materialsDetailed.label')}</Label>
             <Textarea
               id="materials-secondary"
-              placeholder={t('sections.additionalInfo.materialsPlaceholder')}
+              placeholder={form('fields.materialsDetailed.placeholder')}
               value={materialsValue ?? ''}
               onChange={(event) =>
                 setValue('materials', event.target.value === '' ? null : event.target.value, { shouldDirty: true })
@@ -821,27 +787,26 @@ const formSchema = useMemo(
     {/* 3. Propriétés (déplacé après le contenu détaillé + biblio) */}
     <Card className="property-panel">
   <CardHeader>
-    <CardTitle>{t('sections.properties.title')}</CardTitle>
-    <p className="helper-text">{t('sections.properties.helper')}</p>
+    <CardTitle>{form('sections.properties.title')}</CardTitle>
+    <p className="helper-text">{form('sections.properties.helper')}</p>
   </CardHeader>
 
   <CardContent className={styles.propertySections}>
 
     {/* --- Ciblage & durée --- */}
     <div className={styles.sectionBlock}>
-      <p className={styles.sectionTitle}>{t('sections.properties.targetingTitle')}</p>
+      <p className={styles.sectionTitle}>{form('sections.properties.targetingTitle')}</p>
       <div className="property-grid">
 
         {/* Âge (mois) */}
         <div className="property-row">
-          <div className="property-label">{t('sections.properties.ageLabel')}</div>
+          <div className="property-label">{form('fields.age.label')}</div>
           <div className="property-value">
             <div className={styles.ageGrid}>
               <Input
                 id="ageMinMonths"
                 type="number"
-                placeholder={t('fields.ageMin.placeholder')}
-                aria-label={t('fields.ageMin.aria')}
+                placeholder={form('fields.age.minPlaceholder')}
                 {...register('ageMinMonths', {
                   setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
                 })}
@@ -849,8 +814,7 @@ const formSchema = useMemo(
               <Input
                 id="ageMaxMonths"
                 type="number"
-                placeholder={t('fields.ageMax.placeholder')}
-                aria-label={t('fields.ageMax.aria')}
+                placeholder={form('fields.age.maxPlaceholder')}
                 {...register('ageMaxMonths', {
                   setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
                 })}
@@ -867,13 +831,12 @@ const formSchema = useMemo(
 
         {/* Durée */}
         <div className="property-row">
-          <div className="property-label">{t('sections.properties.durationLabel')}</div>
+          <div className="property-label">{form('fields.duration.label')}</div>
           <div className="property-value">
             <Input
               id="durationMinutes"
               type="number"
-              placeholder={t('fields.duration.placeholder')}
-              aria-label={t('fields.duration.aria')}
+              placeholder={form('fields.duration.placeholder')}
               {...register('durationMinutes', {
                 setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
               })}
@@ -881,18 +844,17 @@ const formSchema = useMemo(
             {errors.durationMinutes && (
               <p className="error-text">{errors.durationMinutes.message}</p>
             )}
-            <p className="helper-text">{t('sections.properties.durationHelper')}</p>
+            <p className="helper-text">{form('fields.duration.helper')}</p>
           </div>
         </div>
 
         {/* Population */}
         <div className="property-row">
-          <div className="property-label">{t('sections.properties.populationLabel')}</div>
+          <div className="property-label">{form('fields.population.label')}</div>
           <div className="property-value">
             <Input
               id="population"
-              placeholder={t('fields.population.placeholder')}
-              aria-label={t('fields.population.aria')}
+              placeholder={form('fields.population.placeholder')}
               {...register('population', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
@@ -905,25 +867,23 @@ const formSchema = useMemo(
 
     {/* --- Édition & accès --- */}
     <div className={styles.sectionBlock}>
-      <p className={styles.sectionTitle}>{t('sections.edition.title')}</p>
+      <p className={styles.sectionTitle}>{form('sections.properties.publishingTitle')}</p>
       <div className="property-grid">
 
         {/* Éditeur */}
         <div className="property-row">
-          <div className="property-label">{t('sections.edition.publisherLabel')}</div>
+          <div className="property-label">{form('fields.publisher.label')}</div>
           <div className="property-value">
             <Input
               id="publisher"
-              placeholder={t('fields.publisher.placeholder')}
-              aria-label={t('fields.publisher.aria')}
+              placeholder={form('fields.publisher.placeholder')}
               {...register('publisher', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
             />
             <Input
               id="priceRange"
-              placeholder={t('fields.priceRange.placeholder')}
-              aria-label={t('fields.priceRange.aria')}
+              placeholder={form('fields.priceRange.placeholder')}
               {...register('priceRange', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
@@ -933,12 +893,11 @@ const formSchema = useMemo(
 
         {/* Achat */}
         <div className="property-row">
-          <div className="property-label">{t('sections.edition.purchaseLabel')}</div>
+          <div className="property-label">{form('fields.purchase.label')}</div>
           <div className="property-value">
             <Input
               id="buyLink"
-              placeholder={t('fields.buyLink.placeholder')}
-              aria-label={t('fields.buyLink.aria')}
+              placeholder={form('fields.buyLink.placeholder')}
               {...register('buyLink', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
@@ -948,8 +907,7 @@ const formSchema = useMemo(
             )}
             <Input
               id="materials"
-              placeholder={t('fields.materials.placeholder')}
-              aria-label={t('fields.materials.aria')}
+              placeholder={form('fields.materials.placeholder')}
               {...register('materials', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
@@ -959,7 +917,7 @@ const formSchema = useMemo(
 
         {/* Standardisation */}
         <div className="property-row">
-          <div className="property-label">{t('sections.edition.standardizationLabel')}</div>
+          <div className="property-label">{form('fields.standardization.label')}</div>
           <div className="property-value">
             <label
               className={cn(
@@ -973,9 +931,11 @@ const formSchema = useMemo(
                 className={styles.hiddenInput}
                 aria-label={t('fields.isStandardized.aria')}
               />
-              {watch('isStandardized') ? t('fields.isStandardized.standardized') : t('fields.isStandardized.nonStandardized')}
+              {watch('isStandardized')
+                ? form('fields.standardization.standardized')
+                : form('fields.standardization.nonStandardized')}
             </label>
-            <p className="helper-text">{t('sections.edition.standardizationHelper')}</p>
+            <p className="helper-text">{form('fields.standardization.helper')}</p>
           </div>
         </div>
 
@@ -984,18 +944,18 @@ const formSchema = useMemo(
 
     {/* --- Taxonomie --- */}
     <div className={styles.sectionBlock}>
-      <p className={styles.sectionTitle}>{t('sections.taxonomy.title')}</p>
+      <p className={styles.sectionTitle}>{form('sections.taxonomy.title')}</p>
       <div className="property-grid">
 
         {/* Domaines */}
         <div className="property-row">
-          <div className="property-label">{t('sections.taxonomy.domainsLabel')}</div>
+          <div className="property-label">{form('fields.domains.label')}</div>
           <div className="property-value">
             <MultiSelect
               id="domains"
-              label={t('sections.taxonomy.domainsLabel')}
-              description={t('sections.taxonomy.domainsHelper')}
-              placeholder={t('sections.taxonomy.domainsPlaceholder')}
+              label={form('fields.domains.label')}
+              description={form('fields.domains.description')}
+              placeholder={form('fields.domains.placeholder')}
               options={(taxonomy?.domains ?? []).map((domain) => ({
                 label: domain.label,
                 value: domain.label,
@@ -1011,13 +971,13 @@ const formSchema = useMemo(
 
         {/* Tags */}
         <div className="property-row">
-          <div className="property-label">{t('sections.taxonomy.tagsLabel')}</div>
+          <div className="property-label">{form('fields.tags.label')}</div>
           <div className="property-value">
             <MultiSelect
               id="tags"
-              label={t('sections.taxonomy.tagsLabel')}
-              description={t('sections.taxonomy.tagsHelper')}
-              placeholder={t('sections.taxonomy.tagsPlaceholder')}
+              label={form('fields.tags.label')}
+              description={form('fields.tags.description')}
+              placeholder={form('fields.tags.placeholder')}
               options={(taxonomy?.tags ?? []).map((tag) => ({
                 label: tag.label,
                 value: tag.label,
@@ -1039,13 +999,13 @@ const formSchema = useMemo(
 
     {(createMutation.isError || updateMutation.isError) && (
       <p className={`error-text ${styles.flushError}`}>
-        {createMutation.error?.message || updateMutation.error?.message || t('states.genericError')}
+        {translateHandlerError(createMutation.error?.message ?? updateMutation.error?.message ?? null)}
       </p>
     )}
 
     {(createMutation.isSuccess || updateMutation.isSuccess) && !createMutation.isError && !updateMutation.isError && (
       <p className={styles.successMessage}>
-        {t('states.success')}
+        {feedback('success.saved')}
       </p>
     )}
   </form>
