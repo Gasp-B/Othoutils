@@ -117,6 +117,164 @@
     },
     "emptyState": "No test is cataloged yet. Add your first tests to populate the catalog."
   },
+  "TestsManage": {
+    "metadata": {
+      "title": "Manage tests | Othoutils",
+      "description": "Add or update a test along with its domains and tags."
+    },
+    "sectionLabel": "Create or update a test",
+    "pageTitle": "Add / Edit a test",
+    "pageLead": "Use this form to create a test or edit an existing sheet, including its associated tags and domains."
+  },
+  "TestsForm": {
+    "toolbar": {
+      "sheetLabel": "Sheet",
+      "selectorAria": "Select a test to edit",
+      "selectorPlaceholder": "New test",
+      "editBadge": "Edit mode",
+      "newBadge": "New sheet",
+      "reset": "Reset",
+      "submit": {
+        "saving": "Saving…",
+        "update": "Update",
+        "create": "Create test"
+      }
+    },
+    "fields": {
+      "name": {
+        "placeholder": "Test name (e.g., Language assessment)",
+        "aria": "Test name"
+      },
+      "shortDescription": {
+        "placeholder": "Present the tool and what makes it unique."
+      },
+      "objective": {
+        "placeholder": "What does this test measure? When should it be used?"
+      },
+      "notes": {
+        "placeholder": "Internal observations or links to related resources."
+      },
+      "ageMin": {
+        "placeholder": "36",
+        "aria": "Minimum age in months"
+      },
+      "ageMax": {
+        "placeholder": "120",
+        "aria": "Maximum age in months"
+      },
+      "duration": {
+        "placeholder": "45",
+        "aria": "Estimated duration in minutes"
+      },
+      "population": {
+        "placeholder": "Children, teenagers, adults…",
+        "aria": "Population"
+      },
+      "publisher": {
+        "placeholder": "Publishing house",
+        "aria": "Publisher"
+      },
+      "priceRange": {
+        "placeholder": "Price range",
+        "aria": "Price range"
+      },
+      "buyLink": {
+        "placeholder": "Purchase link (URL)",
+        "aria": "Purchase link"
+      },
+      "materials": {
+        "placeholder": "Required materials",
+        "aria": "Required materials"
+      },
+      "isStandardized": {
+        "aria": "Toggle standardized status",
+        "standardized": "Standardized",
+        "nonStandardized": "Non-standardized"
+      }
+    },
+    "sections": {
+      "summary": {
+        "title": "Detailed summary",
+        "descriptionLabel": "Long description",
+        "objectiveLabel": "Objective",
+        "notesLabel": "Internal notes"
+      },
+      "bibliography": {
+        "title": "Bibliography",
+        "helper": "Add links to articles, videos, or useful references.",
+        "empty": "No links yet. Add your first reference below.",
+        "entryTitleLabel": "Title or source",
+        "entryTitlePlaceholder": "Article, video, book…",
+        "entryUrlLabel": "Link",
+        "entryUrlPlaceholder": "https://example.com/resource",
+        "removeEntry": "Remove",
+        "addReferenceLabel": "Add a reference",
+        "newEntryTitlePlaceholder": "Resource title",
+        "newEntryUrlPlaceholder": "https://example.com/resource",
+        "addButton": "Add",
+        "addHelper": "Provide a short title and a valid URL. Links are saved with the test."
+      },
+      "additionalInfo": {
+        "title": "Additional information",
+        "populationLabel": "Target audience",
+        "populationPlaceholder": "Complete the audience if needed",
+        "materialsLabel": "Detailed materials",
+        "materialsPlaceholder": "List the exact materials, grids, or supports required."
+      },
+      "properties": {
+        "title": "Properties",
+        "helper": "Consider the key properties as in a Notion sheet.",
+        "targetingTitle": "Targeting & duration",
+        "ageLabel": "Age (months)",
+        "durationLabel": "Duration",
+        "durationHelper": "Average estimated time in minutes.",
+        "populationLabel": "Population"
+      },
+      "edition": {
+        "title": "Publishing & access",
+        "publisherLabel": "Publisher",
+        "purchaseLabel": "Purchase",
+        "standardizationLabel": "Standardization",
+        "standardizationHelper": "Toggle according to the nature of the protocol."
+      },
+      "taxonomy": {
+        "title": "Taxonomy",
+        "domainsLabel": "Domains",
+        "domainsPlaceholder": "Search a domain",
+        "domainsHelper": "Refine the sheet by adding one or more domains.",
+        "tagsLabel": "Tags",
+        "tagsPlaceholder": "Search a tag",
+        "tagsHelper": "Add keywords to make search easier."
+      }
+    },
+    "multiSelect": {
+      "placeholder": "Select",
+      "dialogLabel": "Select {label}",
+      "dialogTitle": "Select {label}",
+      "dialogHelper": "Type to filter, click to add or remove.",
+      "searchPlaceholder": "Search…",
+      "searchAria": "Filter {label}",
+      "clear": "Clear",
+      "emptySelection": "No item selected yet.",
+      "emptyResults": "No result",
+      "remove": "Remove",
+      "add": "Add"
+    },
+    "states": {
+      "loadTestsError": "Unable to retrieve the tests.",
+      "loadTaxonomyError": "Unable to load domains and tags.",
+      "createError": "Unable to create the test.",
+      "updateError": "Unable to update the test.",
+      "genericError": "An unexpected error occurred.",
+      "success": "The test and its relations have been saved."
+    },
+    "validation": {
+      "nameRequired": "A name is required.",
+      "bibliographyLabel": "A title is required for this reference.",
+      "url": "Enter a valid URL.",
+      "number": "Enter a valid whole number."
+    }
+  },
   "Footer": {
     "note": "Made with care for speech-language pathology teams. Mobile-first, adaptive, and built for collaboration."
   },
