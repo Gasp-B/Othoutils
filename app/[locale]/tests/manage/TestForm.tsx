@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +21,20 @@ import styles from './test-form.module.css';
 
 type MultiSelectOption = { label: string; value: string };
 
+type MultiSelectCopy = {
+  placeholder: string;
+  dialogLabel: string;
+  dialogTitle: string;
+  dialogHelper: string;
+  searchPlaceholder: string;
+  searchAria: string;
+  clear: string;
+  emptySelection: string;
+  emptyResults: string;
+  remove: string;
+  add: string;
+};
+
 type MultiSelectProps = {
   id: string;
   label: string;
@@ -27,12 +42,13 @@ type MultiSelectProps = {
   placeholder?: string;
   options: MultiSelectOption[];
   values: string[];
+  copy: MultiSelectCopy;
   onChange: (values: string[]) => void;
 };
 
 type PopupPosition = { top: number; left: number; width: number } | null;
 
-function MultiSelect({ id, label, description, placeholder, options, values, onChange }: MultiSelectProps) {
+function MultiSelect({ id, label, description, placeholder, options, values, copy, onChange }: MultiSelectProps) {
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [popupPosition, setPopupPosition] = useState<PopupPosition>(null);
@@ -52,6 +68,11 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
   const selectedOptions = useMemo(
     () => options.filter((option) => values.includes(option.value)),
     [options, values],
+  );
+
+  const optionLabelMap = useMemo(
+    () => new Map(options.map((option) => [option.value, option.label])),
+    [options],
   );
 
   function toggleValue(value: string) {
@@ -159,7 +180,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
                   toggleValue(value);
                 }}
               >
-                {value}
+                {optionLabelMap.get(value) ?? value}
                 <span aria-hidden>×</span>
               </Badge>
             ))
@@ -246,7 +267,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
   );
 }
 
-const formSchema = testSchema
+const formSchemaBase = testSchema
   .omit({ id: true, slug: true, createdAt: true, updatedAt: true })
   .extend({
     id: z.string().uuid().optional(),
@@ -260,19 +281,19 @@ const formSchema = testSchema
     notes: z.string().nullable().optional(),
     ageMinMonths: z.number().int().nullable().optional(),
     ageMaxMonths: z.number().int().nullable().optional(),
-  durationMinutes: z.number().int().nullable().optional(),
-  bibliography: z
-    .array(
-      z.object({
-        label: z.string().min(1),
-        url: z.string().url(),
-      }),
-    )
-    .default([])
-    .optional(),
-});
+    durationMinutes: z.number().int().nullable().optional(),
+    bibliography: z
+      .array(
+        z.object({
+          label: z.string().min(1),
+          url: z.string().url(),
+        }),
+      )
+      .default([])
+      .optional(),
+  });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof formSchemaBase>;
 
 type ApiResponse = {
   test?: TestDto;
@@ -300,7 +321,7 @@ const defaultValues: FormValues = {
   bibliography: [],
 };
 
-async function fetchTests() {
+async function fetchTests(errorMessage: string) {
   const response = await fetch('/api/tests');
 
   if (!response.ok) {
@@ -312,7 +333,7 @@ async function fetchTests() {
   return parsed.tests;
 }
 
-async function fetchTaxonomy() {
+async function fetchTaxonomy(errorMessage: string) {
   const response = await fetch('/api/tests/taxonomy');
 
   if (!response.ok) {
@@ -323,7 +344,7 @@ async function fetchTaxonomy() {
   return taxonomyResponseSchema.parse(json);
 }
 
-async function createTest(payload: FormValues) {
+async function createTest(payload: FormValues, fallbackMessage: string) {
   const response = await fetch('/api/tests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -338,7 +359,7 @@ async function createTest(payload: FormValues) {
   return (await response.json()) as ApiResponse;
 }
 
-async function updateTest(payload: FormValues) {
+async function updateTest(payload: FormValues, fallbackMessage: string) {
   const response = await fetch('/api/tests', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -354,6 +375,7 @@ async function updateTest(payload: FormValues) {
 }
 
 function TestForm() {
+  const t = useTranslations('TestsForm');
   const queryClient = useQueryClient();
   const form = useTranslations('ManageTests.form');
   const feedback = useTranslations('ManageTests.feedback');
@@ -408,6 +430,40 @@ function TestForm() {
   const populationValue = watch('population');
   const materialsValue = watch('materials');
 
+  const multiSelectBaseCopy = useMemo<Omit<MultiSelectCopy, 'dialogLabel' | 'dialogTitle' | 'searchAria'>>(
+    () => ({
+      placeholder: t('multiSelect.placeholder'),
+      dialogHelper: t('multiSelect.dialogHelper'),
+      searchPlaceholder: t('multiSelect.searchPlaceholder'),
+      clear: t('multiSelect.clear'),
+      emptySelection: t('multiSelect.emptySelection'),
+      emptyResults: t('multiSelect.emptyResults'),
+      remove: t('multiSelect.remove'),
+      add: t('multiSelect.add'),
+    }),
+    [t],
+  );
+
+  const domainCopy = useMemo<MultiSelectCopy>(
+    () => ({
+      ...multiSelectBaseCopy,
+      dialogLabel: t('multiSelect.dialogLabel', { label: t('sections.taxonomy.domainsLabel') }),
+      dialogTitle: t('multiSelect.dialogTitle', { label: t('sections.taxonomy.domainsLabel') }),
+      searchAria: t('multiSelect.searchAria', { label: t('sections.taxonomy.domainsLabel') }),
+    }),
+    [multiSelectBaseCopy, t],
+  );
+
+  const tagCopy = useMemo<MultiSelectCopy>(
+    () => ({
+      ...multiSelectBaseCopy,
+      dialogLabel: t('multiSelect.dialogLabel', { label: t('sections.taxonomy.tagsLabel') }),
+      dialogTitle: t('multiSelect.dialogTitle', { label: t('sections.taxonomy.tagsLabel') }),
+      searchAria: t('multiSelect.searchAria', { label: t('sections.taxonomy.tagsLabel') }),
+    }),
+    [multiSelectBaseCopy, t],
+  );
+
   useEffect(() => {
     if (!selectedTestId) {
       reset(defaultValues);
@@ -442,7 +498,7 @@ function TestForm() {
   }, [reset, selectedTestId, tests]);
 
   const createMutation = useMutation({
-    mutationFn: createTest,
+    mutationFn: (payload: FormValues) => createTest(payload, t('states.createError')),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tests'] });
       void queryClient.invalidateQueries({ queryKey: ['test-taxonomy'] });
@@ -453,7 +509,7 @@ function TestForm() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: updateTest,
+    mutationFn: (payload: FormValues) => updateTest(payload, t('states.updateError')),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['tests'] });
       void queryClient.invalidateQueries({ queryKey: ['test-taxonomy'] });
@@ -542,6 +598,7 @@ function TestForm() {
           id="test-selector"
           value={selectedTestId ?? ''}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => setSelectedTestId(event.target.value || null)}
+          aria-label={t('toolbar.selectorAria')}
         >
           <option value="">{form('toolbar.newTest')}</option>
           {(tests ?? []).map((test) => (
@@ -874,6 +931,7 @@ function TestForm() {
                 type="checkbox"
                 {...register('isStandardized')}
                 className={styles.hiddenInput}
+                aria-label={t('fields.isStandardized.aria')}
               />
               {watch('isStandardized')
                 ? form('fields.standardization.standardized')
@@ -905,6 +963,7 @@ function TestForm() {
                 value: domain.label,
               }))}
               values={currentDomains ?? []}
+              copy={domainCopy}
               onChange={(values) =>
                 setValue('domains', values, { shouldDirty: true })
               }
@@ -926,6 +985,7 @@ function TestForm() {
                 value: tag.label,
               }))}
               values={currentTags ?? []}
+              copy={tagCopy}
               onChange={(values) =>
                 setValue('tags', values, { shouldDirty: true })
               }

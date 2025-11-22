@@ -5,28 +5,34 @@ import TestForm from './TestForm';
 import styles from './manage-page.module.css';
 import { locales, type Locale } from '@/i18n/routing';
 
-type LocalePageProps = {
+type ManagePageProps = {
   params: Promise<{ locale: string }>;
 };
 
-export async function generateMetadata({ params }: LocalePageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: ManagePageProps): Promise<Metadata> {
   const { locale } = await params;
 
   if (!locales.includes(locale as Locale)) {
     notFound();
   }
 
-  const t = await getTranslations({ locale, namespace: 'ManageTests.metadata' });
+  const t = await getTranslations({ locale, namespace: 'TestsManage' });
 
   return {
-    title: t('title'),
-    description: t('description'),
+    title: t('metadata.title'),
+    description: t('metadata.description'),
     metadataBase: new URL('https://othoutils.example.com'),
   };
 }
 
-export default async function ManageTestsPage() {
-  const t = await getTranslations('ManageTests.page');
+export default async function ManageTestsPage({ params }: ManagePageProps) {
+  const { locale } = await params;
+
+  if (!locales.includes(locale as Locale)) {
+    notFound();
+  }
+
+  const t = await getTranslations({ locale, namespace: 'TestsManage' });
 
   return (
     <main className={`container section-shell ${styles.page}`}>
@@ -36,10 +42,8 @@ export default async function ManageTestsPage() {
       </div>
 
       <div className={`glass panel ${styles.introPanel}`}>
-        <h1 className={styles.pageTitle}>{t('title')}</h1>
-        <p className={`text-subtle ${styles.pageLead}`}>
-          {t('lead')}
-        </p>
+        <h1 className={styles.pageTitle}>{t('pageTitle')}</h1>
+        <p className={`text-subtle ${styles.pageLead}`}>{t('pageLead')}</p>
       </div>
 
       <TestForm />
