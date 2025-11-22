@@ -379,56 +379,60 @@ function TestForm() {
   const numberMessage = t('validation.number');
   const urlMessage = t('validation.url');
 
-  const formSchema = useMemo(
-    () =>
-      formSchemaBase.extend({
-          id: z.string().uuid().optional(),
-          name: z.string().min(1, { message: t('validation.nameRequired') }),
-          shortDescription: z.string().nullable().optional(),
-          objective: z.string().nullable().optional(),
-          ageMinMonths: z
-            .number({ invalid_type_error: numberMessage })
-            .refine((value) => Number.isFinite(value), { message: numberMessage })
-            .int({ message: numberMessage })
-            .nullable()
-            .optional(),
-          ageMaxMonths: z
-            .number({ invalid_type_error: numberMessage })
-            .refine((value) => Number.isFinite(value), { message: numberMessage })
-            .int({ message: numberMessage })
-            .nullable()
-            .optional(),
-          population: z.string().nullable().optional(),
-          durationMinutes: z
-            .number({ invalid_type_error: numberMessage })
-            .refine((value) => Number.isFinite(value), { message: numberMessage })
-            .int({ message: numberMessage })
-            .nullable()
-            .optional(),
-          materials: z.string().nullable().optional(),
-          isStandardized: z.boolean(),
-          publisher: z.string().nullable().optional(),
-          priceRange: z.string().nullable().optional(),
-          buyLink: z
-            .string({ invalid_type_error: urlMessage })
-            .url({ message: urlMessage })
-            .nullable()
-            .optional(),
-          notes: z.string().nullable().optional(),
-          domains: z.array(z.string()),
-          tags: z.array(z.string()),
-          bibliography: z
-            .array(
-              z.object({
-                label: z.string().min(1, { message: t('validation.bibliographyLabel') }),
-                url: z.string({ invalid_type_error: urlMessage }).url({ message: urlMessage }),
-              }),
-            )
-            .default([])
-            .optional(),
-        }),
-    [numberMessage, t, urlMessage],
-  );
+const numericNullableInt = z
+  .number({ error: numberMessage })
+  .refine((value) => Number.isFinite(value), { error: numberMessage })
+  .int({ error: numberMessage })
+  .nullable()
+  .optional();
+
+const formSchema = useMemo(
+  () =>
+    formSchemaBase.extend({
+      id: z.string().uuid().optional(),
+      name: z.string().min(1, { message: t('validation.nameRequired') }),
+
+      shortDescription: z.string().nullable().optional(),
+      objective: z.string().nullable().optional(),
+
+      ageMinMonths: numericNullableInt,
+      ageMaxMonths: numericNullableInt,
+      durationMinutes: numericNullableInt,
+
+      population: z.string().nullable().optional(),
+      materials: z.string().nullable().optional(),
+      isStandardized: z.boolean(),
+      publisher: z.string().nullable().optional(),
+      priceRange: z.string().nullable().optional(),
+
+      buyLink: z
+        .string({ error: urlMessage })
+        .url({ message: urlMessage })
+        .nullable()
+        .optional(),
+
+      notes: z.string().nullable().optional(),
+
+      domains: z.array(z.string()),
+      tags: z.array(z.string()),
+
+      bibliography: z
+        .array(
+          z.object({
+            label: z.string().min(1, {
+              message: t('validation.bibliographyLabel'),
+            }),
+            url: z.string({ error: urlMessage }).url({
+              message: urlMessage,
+            }),
+          }),
+        )
+        .default([])
+        .optional(),
+    }),
+  [numberMessage, urlMessage, t],
+);
+
 
   const taxonomyQueryFn = useCallback(() => fetchTaxonomy(t('states.loadTaxonomyError')), [t]);
   const testsQueryFn = useCallback(() => fetchTests(t('states.loadTestsError')), [t]);
