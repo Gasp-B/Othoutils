@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import CatalogueMegaMenu from '@/components/CatalogueMegaMenu';
-import type { CatalogueDomain } from '@/types/catalogue';
+import type { CatalogueDomain } from '@/lib/navigation/catalogue';
 
 function Header() {
   const [catalogueDomains, setCatalogueDomains] = useState<CatalogueDomain[]>([]);
