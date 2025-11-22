@@ -17,11 +17,14 @@ type Props = {
 
 function CatalogueMegaMenu({ domains }: Props) {
   const t = useTranslations('Header');
+
   const [isOpen, setIsOpen] = useState(false);
   const [activeDomainId, setActiveDomainId] = useState<string | null>(
     domains[0]?.id ?? null,
   );
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const menuId = 'catalogue-mega-menu';
 
   // Garde un domaine actif cohérent même si la liste change
@@ -41,10 +44,54 @@ function CatalogueMegaMenu({ domains }: Props) {
     [activeDomainId, domains],
   );
 
+  const openMenu = () => {
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    setIsOpen(true);
+  };
+
+  const closeMenu = () => {
+    // Petit délai pour éviter les clignotements quand on passe
+    // du bouton vers le panel avec la souris
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+    }
+
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 80);
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'Escape') {
+      event.stopPropagation();
       setIsOpen(false);
       triggerRef.current?.focus();
+      return;
+    }
+
+    // Navigation simple au clavier entre les domaines (↑ / ↓)
+    if (!domains.length) return;
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+
+      if (!activeDomain) {
+        setActiveDomainId(domains[0]?.id ?? null);
+        return;
+      }
+
+      const currentIndex = domains.findIndex((d) => d.id === activeDomain.id);
+      if (currentIndex === -1) return;
+
+      const offset = event.key === 'ArrowDown' ? 1 : -1;
+      const nextIndex =
+        (currentIndex + offset + domains.length) % domains.length;
+
+      setActiveDomainId(domains[nextIndex]?.id ?? activeDomain.id);
+      openMenu();
     }
   };
 
@@ -59,8 +106,8 @@ function CatalogueMegaMenu({ domains }: Props) {
   return (
     <div
       className="ph-header__mega-wrapper"
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
+      onMouseEnter={openMenu}
+      onMouseLeave={closeMenu}
       onKeyDown={handleKeyDown}
     >
       {/* Trigger */}
@@ -72,7 +119,7 @@ function CatalogueMegaMenu({ domains }: Props) {
         aria-expanded={isOpen}
         aria-controls={menuId}
         onClick={() => setIsOpen((open) => !open)}
-        onFocus={() => setIsOpen(true)}
+        onFocus={openMenu}
       >
         {t('catalogue')}
         <span aria-hidden>▾</span>
@@ -84,21 +131,30 @@ function CatalogueMegaMenu({ domains }: Props) {
         role="menu"
         className={`ph-header__mega-panel ${isOpen ? 'is-open' : ''}`}
         aria-label={t('megaMenuLabel')}
+        // Important : on garde le menu ouvert tant qu’on est dedans
+        onMouseEnter={openMenu}
+        onMouseLeave={closeMenu}
       >
         <div className="ph-header__mega-grid">
           {/* Colonne domaines */}
-          <div className="ph-header__mega-column" aria-label={t('domainsLabel')}>
+          <div
+            className="ph-header__mega-column"
+            aria-label={t('domainsLabel')}
+          >
             <ul className="ph-header__mega-domains">
               {domains.map((domain) => (
                 <li key={domain.id}>
                   <Link
-                    href={{ pathname: '/catalogue/[slug]', params: { slug: domain.slug } }}
+                    href={{
+                      pathname: '/catalogue/[slug]',
+                      params: { slug: domain.slug },
+                    }}
                     className={`ph-header__mega-domain ${
                       domain.id === activeDomain?.id ? 'is-active' : ''
                     }`}
                     onMouseEnter={() => setActiveDomainId(domain.id)}
                     onFocus={() => {
-                      setIsOpen(true);
+                      openMenu();
                       setActiveDomainId(domain.id);
                     }}
                     onClick={() => setIsOpen(false)}
@@ -112,7 +168,10 @@ function CatalogueMegaMenu({ domains }: Props) {
           </div>
 
           {/* Colonne tags */}
-          <div className="ph-header__mega-column ph-header__mega-tags" aria-live="polite">
+          <div
+            className="ph-header__mega-column ph-header__mega-tags"
+            aria-live="polite"
+          >
             <p className="ph-header__mega-title">
               {activeDomain?.label ?? t('tagsLabel')}
             </p>
@@ -125,7 +184,10 @@ function CatalogueMegaMenu({ domains }: Props) {
                     key={`${activeDomain.id}-${tag.id}`}
                     href={{
                       pathname: '/catalogue/[slug]/[tag]',
-                      params: { slug: activeDomain.slug, tag: tag.slug },
+                      params: {
+                        slug: activeDomain.slug,
+                        tag: tag.slug,
+                      },
                     }}
                     className="ph-header__mega-tag"
                     onClick={() => setIsOpen(false)}

@@ -636,40 +636,86 @@ function TestForm() {
 
     {/* 1. Résumé détaillé + 2. Bibliographie + Infos complémentaires */}
     <div className="content-grid">
-      {/* Résumé détaillé */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{form('sections.detailedSummary.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="property-value">
-            <Label htmlFor="shortDescription">{form('fields.shortDescription.label')}</Label>
-            <Textarea
-              id="shortDescription"
-              placeholder={form('fields.shortDescription.placeholder')}
-              {...register('shortDescription', { setValueAs: (value) => (value === '' ? null : value) })}
-            />
-          </div>
-          <Separator />
-          <div className="property-value">
-            <Label htmlFor="objective">{form('fields.objective.label')}</Label>
-            <Textarea
-              id="objective"
-              placeholder={form('fields.objective.placeholder')}
-              {...register('objective', { setValueAs: (value) => (value === '' ? null : value) })}
-            />
-          </div>
-          <Separator />
-          <div className="property-value">
-            <Label htmlFor="notes">{form('fields.notes.label')}</Label>
-            <Textarea
-              id="notes"
-              placeholder={form('fields.notes.placeholder')}
-              {...register('notes', { setValueAs: (value) => (value === '' ? null : value) })}
-            />
-          </div>
-        </CardContent>
-      </Card>
+        {/* Résumé détaillé */}
+        <Card>
+          <CardHeader>
+            <CardTitle>{form('sections.detailedSummary.title')}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="property-value">
+              <Label htmlFor="shortDescription">{form('fields.shortDescription.label')}</Label>
+              <Textarea
+                id="shortDescription"
+                placeholder={form('fields.shortDescription.placeholder')}
+                {...register('shortDescription', { setValueAs: (value) => (value === '' ? null : value) })}
+              />
+            </div>
+
+            <Separator />
+
+            <div className="property-value">
+              <Label htmlFor="objective">{form('fields.objective.label')}</Label>
+              <Textarea
+                id="objective"
+                placeholder={form('fields.objective.placeholder')}
+                {...register('objective', { setValueAs: (value) => (value === '' ? null : value) })}
+              />
+            </div>
+
+            {/* Aperçu des domaines + tags dans le résumé détaillé */}
+            {(currentDomains?.length ?? 0) > 0 || (currentTags?.length ?? 0) > 0 ? (
+              <>
+                <Separator />
+                <div className={styles.summaryTaxonomy}>
+                  {(currentDomains?.length ?? 0) > 0 && (
+                    <div className={styles.summaryTaxonomyGroup}>
+                      <Label>{form('sections.taxonomy.domainsLabel')}</Label>
+                      <div className={styles.summaryTaxonomyBadges}>
+                        {(currentDomains ?? []).map((domain) => (
+                          <Badge
+                            key={domain}
+                            variant="outline"
+                            className={styles.summaryBadge}
+                          >
+                            {domain}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(currentTags?.length ?? 0) > 0 && (
+                    <div className={styles.summaryTaxonomyGroup}>
+                      <Label>{form('sections.taxonomy.tagsLabel')}</Label>
+                      <div className={styles.summaryTaxonomyBadges}>
+                        {(currentTags ?? []).map((tag) => (
+                          <Badge
+                            key={tag}
+                            variant="secondary"
+                            className={styles.summaryBadge}
+                          >
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : null}
+
+            <Separator />
+
+            <div className="property-value">
+              <Label htmlFor="notes">{form('fields.notes.label')}</Label>
+              <Textarea
+                id="notes"
+                placeholder={form('fields.notes.placeholder')}
+                {...register('notes', { setValueAs: (value) => (value === '' ? null : value) })}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
       {/* Bibliographie (2ème bloc) */}
       <Card>
@@ -941,59 +987,6 @@ function TestForm() {
 
       </div>
     </div>
-
-    {/* --- Taxonomie --- */}
-    <div className={styles.sectionBlock}>
-      <p className={styles.sectionTitle}>{form('sections.taxonomy.title')}</p>
-      <div className="property-grid">
-
-        {/* Domaines */}
-        <div className="property-row">
-          <div className="property-label">{form('fields.domains.label')}</div>
-          <div className="property-value">
-            <MultiSelect
-              id="domains"
-              label={form('fields.domains.label')}
-              description={form('fields.domains.description')}
-              placeholder={form('fields.domains.placeholder')}
-              options={(taxonomy?.domains ?? []).map((domain) => ({
-                label: domain.label,
-                value: domain.label,
-              }))}
-              values={currentDomains ?? []}
-              copy={domainCopy}
-              onChange={(values) =>
-                setValue('domains', values, { shouldDirty: true })
-              }
-            />
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div className="property-row">
-          <div className="property-label">{form('fields.tags.label')}</div>
-          <div className="property-value">
-            <MultiSelect
-              id="tags"
-              label={form('fields.tags.label')}
-              description={form('fields.tags.description')}
-              placeholder={form('fields.tags.placeholder')}
-              options={(taxonomy?.tags ?? []).map((tag) => ({
-                label: tag.label,
-                value: tag.label,
-              }))}
-              values={currentTags ?? []}
-              copy={tagCopy}
-              onChange={(values) =>
-                setValue('tags', values, { shouldDirty: true })
-              }
-            />
-          </div>
-        </div>
-
-      </div>
-    </div>
-
   </CardContent>
 </Card>
 
