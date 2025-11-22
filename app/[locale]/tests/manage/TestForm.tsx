@@ -417,7 +417,7 @@ function TestForm() {
     watch,
     formState: { errors },
   } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchemaBase),
     defaultValues,
     mode: 'onBlur',
   });
