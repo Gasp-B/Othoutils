@@ -140,5 +140,228 @@
       "description": "Description à venir.",
       "objective": "Objectif clinique à documenter."
     }
+  },
+  "ManageTests": {
+    "metadata": {
+      "title": "Gérer les tests | Othoutils",
+      "description": "Ajoutez ou mettez à jour un test avec ses domaines et tags."
+    },
+    "page": {
+      "sectionLabel": "Créer ou mettre à jour un test",
+      "title": "Ajouter / Éditer un test",
+      "lead": "Utilisez ce formulaire pour créer un test ou modifier une fiche existante, y compris ses tags et domaines associés."
+    },
+    "form": {
+      "toolbar": {
+        "sheetLabel": "Fiche",
+        "newTest": "Nouveau test",
+        "editBadge": "Mode édition",
+        "newBadge": "Nouvelle fiche",
+        "reset": "Réinitialiser"
+      },
+      "actions": {
+        "create": "Créer le test",
+        "update": "Mettre à jour",
+        "pending": "Enregistrement…"
+      },
+      "fields": {
+        "name": {
+          "placeholder": "Nom du test (ex : Évaluation du langage)"
+        },
+        "shortDescription": {
+          "label": "Description longue",
+          "placeholder": "Présentez l'outil et ce qui le rend unique."
+        },
+        "objective": {
+          "label": "Objectif",
+          "placeholder": "Que mesure ce test ? Dans quel contexte l'utiliser ?"
+        },
+        "notes": {
+          "label": "Notes internes",
+          "placeholder": "Observations internes ou liens vers des ressources connexes."
+        },
+        "populationDetailed": {
+          "label": "Public cible",
+          "placeholder": "Compléter le public si besoin"
+        },
+        "materialsDetailed": {
+          "label": "Matériel détaillé",
+          "placeholder": "Listez le matériel précis, les grilles ou supports nécessaires."
+        },
+        "age": {
+          "label": "Âge (mois)",
+          "minPlaceholder": "36",
+          "maxPlaceholder": "120"
+        },
+        "duration": {
+          "label": "Durée",
+          "placeholder": "45",
+          "helper": "Temps moyen estimé en minutes."
+        },
+        "population": {
+          "label": "Population",
+          "placeholder": "Enfants, adolescents, adultes…"
+        },
+        "publisher": {
+          "label": "Éditeur",
+          "placeholder": "Maison d'édition"
+        },
+        "priceRange": {
+          "placeholder": "Fourchette de prix"
+        },
+        "purchase": {
+          "label": "Achat"
+        },
+        "buyLink": {
+          "placeholder": "Lien d'achat (URL)"
+        },
+        "materials": {
+          "placeholder": "Matériel requis"
+        },
+        "standardization": {
+          "label": "Standardisation",
+          "standardized": "Standardisé",
+          "nonStandardized": "Non standardisé",
+          "helper": "Basculer selon la nature du protocole."
+        },
+        "domains": {
+          "label": "Domaines",
+          "description": "Affinez la fiche en ajoutant un ou plusieurs domaines.",
+          "placeholder": "Rechercher un domaine"
+        },
+        "tags": {
+          "label": "Tags",
+          "description": "Ajoutez des mots-clés pour faciliter la recherche.",
+          "placeholder": "Rechercher un tag"
+        }
+      },
+      "sections": {
+        "detailedSummary": {
+          "title": "Résumé détaillé"
+        },
+        "bibliography": {
+          "title": "Bibliographie",
+          "helper": "Ajoutez des liens vers des articles, vidéos ou références utiles.",
+          "empty": "Aucun lien pour le moment. Ajoutez votre première référence ci-dessous."
+        },
+        "additionalInfo": {
+          "title": "Informations complémentaires"
+        },
+        "properties": {
+          "title": "Propriétés",
+          "helper": "Pensez aux propriétés clés comme dans une fiche Notion.",
+          "targetingTitle": "Ciblage & durée",
+          "publishingTitle": "Édition & accès"
+        },
+        "taxonomy": {
+          "title": "Taxonomie"
+        }
+      },
+      "bibliography": {
+        "entryLabel": "Titre ou source",
+        "entryPlaceholder": "Article, vidéo, ouvrage…",
+        "linkLabel": "Lien",
+        "linkPlaceholder": "https://example.com/ressource",
+        "remove": "Supprimer",
+        "addTitle": "Ajouter une référence",
+        "addPlaceholder": "Titre de la ressource",
+        "addUrlPlaceholder": "https://exemple.com/ressource",
+        "addButton": "Ajouter",
+        "addHelper": "Indiquez un titre court et une URL valide. Les liens seront enregistrés avec le test."
+      },
+      "multiSelect": {
+        "placeholder": "Sélectionner",
+        "dialogLabel": "Sélectionner {label}",
+        "dialogTitle": "Sélectionner {label}",
+        "filterHelper": "Tapez pour filtrer, cliquez pour ajouter ou retirer.",
+        "searchPlaceholder": "Rechercher…",
+        "filterAria": "Filtrer {label}",
+        "clear": "Effacer",
+        "emptySelection": "Aucun élément sélectionné pour le moment.",
+        "emptyResults": "Aucun résultat",
+        "add": "Ajouter",
+        "remove": "Supprimer"
+      }
+    },
+    "feedback": {
+      "errors": {
+        "generic": "Une erreur est survenue. Merci de réessayer.",
+        "genericWithReason": "Une erreur est survenue : {reason}",
+        "fetchTests": "Impossible de récupérer les tests.",
+        "fetchTaxonomy": "Impossible de charger les domaines et tags.",
+        "create": "Impossible de créer le test.",
+        "update": "Impossible de mettre à jour le test."
+      },
+      "success": {
+        "saved": "Le test et ses relations ont été enregistrés."
+      }
+    }
+  },
+  "TaxonomyAdmin": {
+    "metadata": {
+      "title": "Gérer les catégories et tags | Othoutils",
+      "description": "Ajoutez, supprimez ou renommez les domaines et tags des tests."
+    },
+    "page": {
+      "sectionLabel": "Administration",
+      "title": "Catégories & tags",
+      "lead": "Centralisez la liste des domaines et tags utilisables dans la fiche test. Les éléments créés ici seront immédiatement disponibles dans le formulaire « Ajouter / Éditer un test »."
+    },
+    "manager": {
+      "actions": {
+        "reset": "Réinitialiser"
+      },
+      "domains": {
+        "title": "Créer un domaine",
+        "helper": "Les domaines alimentent la liste « Domaines » du formulaire Ajouter / Éditer un test.",
+        "toolbarTitle": "Domaines",
+        "count": "{count, plural, one {{count} domaine} other {{count} domaines}}",
+        "loading": "Chargement des domaines…",
+        "empty": "Aucun domaine enregistré pour le moment.",
+        "inputLabel": "Nom du domaine",
+        "inputPlaceholder": "Ex. Phonologie",
+        "exists": "Ce domaine existe déjà.",
+        "actions": {
+          "add": "Ajouter le domaine",
+          "pending": "Enregistrement…",
+          "delete": "Supprimer",
+          "deleting": "Suppression…",
+          "deleteAria": "Supprimer {label}"
+        }
+      },
+      "tags": {
+        "title": "Créer un tag",
+        "helper": "Les tags enrichissent la recherche et les filtres dans les fiches tests.",
+        "toolbarTitle": "Tags",
+        "count": "{count, plural, one {{count} tag} other {{count} tags}}",
+        "loading": "Chargement des tags…",
+        "empty": "Aucun tag enregistré pour le moment.",
+        "inputLabel": "Nom du tag",
+        "inputPlaceholder": "Ex. Bilan rapide",
+        "exists": "Ce tag existe déjà.",
+        "actions": {
+          "add": "Ajouter le tag",
+          "pending": "Enregistrement…",
+          "delete": "Supprimer",
+          "deleting": "Suppression…",
+          "deleteAria": "Supprimer {label}"
+        }
+      }
+    },
+    "feedback": {
+      "errors": {
+        "generic": "Une erreur est survenue. Merci de réessayer.",
+        "genericWithReason": "Une erreur est survenue : {reason}",
+        "timeout": "Le chargement a expiré, veuillez réessayer.",
+        "fetch": "Impossible de récupérer les domaines et tags.",
+        "create": "Impossible de créer cet élément.",
+        "delete": "Impossible de supprimer cet élément."
+      },
+      "toasts": {
+        "domainCreated": "Le domaine a été enregistré et sera disponible dans le formulaire de test.",
+        "tagCreated": "Le tag a été enregistré et sera disponible dans le formulaire de test.",
+        "deleted": "Élément supprimé. Les listes seront actualisées."
+      }
+    }
   }
 }

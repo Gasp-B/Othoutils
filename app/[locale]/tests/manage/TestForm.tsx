@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -35,6 +36,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [popupPosition, setPopupPosition] = useState<PopupPosition>(null);
+  const t = useTranslations('ManageTests.form.multiSelect');
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -145,7 +147,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
       >
         <div className={styles.multiSelectTokens}>
           {values.length === 0 ? (
-            <span className="text-subtle">{placeholder ?? 'Sélectionner'}</span>
+            <span className="text-subtle">{placeholder ?? t('placeholder')}</span>
           ) : (
             values.map((value) => (
               <Badge
@@ -177,11 +179,11 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
             style={popupPosition ? { top: popupPosition.top, left: popupPosition.left, width: popupPosition.width } : undefined}
             role="dialog"
             aria-modal="true"
-            aria-label={`Sélectionner ${label}`}
+            aria-label={t('dialogLabel', { label })}
           >
             <div className={styles.popupHeader}>
-              <div className={styles.popupTitle}>Sélectionner {label.toLowerCase()}</div>
-              <p className="helper-text">Tapez pour filtrer, cliquez pour ajouter ou retirer.</p>
+              <div className={styles.popupTitle}>{t('dialogTitle', { label })}</div>
+              <p className="helper-text">{t('filterHelper')}</p>
             </div>
 
             <div className={styles.searchBar}>
@@ -189,19 +191,19 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
                 ref={searchInputRef}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
-                placeholder={placeholder ?? 'Rechercher…'}
-                aria-label={`Filtrer ${label}`}
+                placeholder={placeholder ?? t('searchPlaceholder')}
+                aria-label={t('filterAria', { label })}
               />
               {query ? (
                 <Button variant="ghost" size="sm" type="button" onClick={() => setQuery('')}>
-                  Effacer
+                  {t('clear')}
                 </Button>
               ) : null}
             </div>
 
             <div className={styles.selectedBadges}>
               {selectedOptions.length === 0 ? (
-                <p className="helper-text">Aucun élément sélectionné pour le moment.</p>
+                <p className="helper-text">{t('emptySelection')}</p>
               ) : (
                 selectedOptions.map((option) => (
                   <Badge
@@ -219,7 +221,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
 
             <div className={styles.optionsList}>
               {filtered.length === 0 ? (
-                <p className={styles.emptyState}>Aucun résultat</p>
+                <p className={styles.emptyState}>{t('emptyResults')}</p>
               ) : (
                 filtered.map((option) => {
                   const active = values.includes(option.value);
@@ -231,7 +233,7 @@ function MultiSelect({ id, label, description, placeholder, options, values, onC
                       onClick={() => toggleValue(option.value)}
                     >
                       <span className={styles.optionLabel}>{option.label}</span>
-                      <span className={styles.optionBadge}>{active ? 'Supprimer' : 'Ajouter'}</span>
+                      <span className={styles.optionBadge}>{active ? t('remove') : t('add')}</span>
                     </button>
                   );
                 })
@@ -302,7 +304,7 @@ async function fetchTests() {
   const response = await fetch('/api/tests');
 
   if (!response.ok) {
-    throw new Error('Impossible de récupérer les tests');
+    throw new Error('fetchTests');
   }
 
   const json = (await response.json()) as ApiResponse;
@@ -314,7 +316,7 @@ async function fetchTaxonomy() {
   const response = await fetch('/api/tests/taxonomy');
 
   if (!response.ok) {
-    throw new Error('Impossible de charger les domaines et tags');
+    throw new Error('fetchTaxonomy');
   }
 
   const json = await response.json();
@@ -330,7 +332,7 @@ async function createTest(payload: FormValues) {
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as ApiResponse;
-    throw new Error(json.error ?? "Impossible de créer le test");
+    throw new Error(json.error ?? 'createTest');
   }
 
   return (await response.json()) as ApiResponse;
@@ -345,7 +347,7 @@ async function updateTest(payload: FormValues) {
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as ApiResponse;
-    throw new Error(json.error ?? "Impossible de mettre à jour le test");
+    throw new Error(json.error ?? 'updateTest');
   }
 
   return (await response.json()) as ApiResponse;
@@ -353,10 +355,39 @@ async function updateTest(payload: FormValues) {
 
 function TestForm() {
   const queryClient = useQueryClient();
+  const form = useTranslations('ManageTests.form');
+  const feedback = useTranslations('ManageTests.feedback');
   const { data: taxonomy } = useQuery({ queryKey: ['test-taxonomy'], queryFn: fetchTaxonomy });
   const { data: tests } = useQuery({ queryKey: ['tests'], queryFn: fetchTests });
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [newBibliography, setNewBibliography] = useState({ label: '', url: '' });
+  const errorTranslationKeyByMessage: Record<string, string> = {
+    fetchTests: 'errors.fetchTests',
+    'Impossible de récupérer les tests': 'errors.fetchTests',
+    'Unable to retrieve tests': 'errors.fetchTests',
+    fetchTaxonomy: 'errors.fetchTaxonomy',
+    'Impossible de charger les domaines et tags': 'errors.fetchTaxonomy',
+    'Unable to load domains and tags': 'errors.fetchTaxonomy',
+    createTest: 'errors.create',
+    'Impossible de créer le test': 'errors.create',
+    'Unable to create the test': 'errors.create',
+    updateTest: 'errors.update',
+    'Impossible de mettre à jour le test': 'errors.update',
+    'Unable to update the test': 'errors.update',
+  };
+
+  const translateHandlerError = (message?: string | null) => {
+    if (!message) return feedback('errors.generic');
+
+    const normalizedMessage = message.trim();
+    const translationKey = errorTranslationKeyByMessage[normalizedMessage];
+
+    if (translationKey) {
+      return feedback(translationKey);
+    }
+
+    return feedback('errors.genericWithReason', { reason: normalizedMessage });
+  };
 
   const {
     register,
@@ -431,9 +462,13 @@ function TestForm() {
 
   const [submitLabel, submitDisabled] = useMemo(() => {
     const pending = createMutation.isPending || updateMutation.isPending;
-    const label = pending ? 'Enregistrement…' : selectedTestId ? 'Mettre à jour' : 'Créer le test';
+    const label = pending
+      ? form('actions.pending')
+      : selectedTestId
+        ? form('actions.update')
+        : form('actions.create');
     return [label, pending];
-  }, [createMutation.isPending, updateMutation.isPending, selectedTestId]);
+  }, [createMutation.isPending, form, selectedTestId, updateMutation.isPending]);
 
   const onSubmit = handleSubmit((values) => {
     const payload: FormValues = {
@@ -502,20 +537,20 @@ function TestForm() {
   <form className="notion-form" onSubmit={(event) => void onSubmit(event)}>
     <div className="notion-toolbar">
       <div className="notion-toolbar__group">
-        <Label htmlFor="test-selector">Fiche</Label>
+        <Label htmlFor="test-selector">{form('toolbar.sheetLabel')}</Label>
         <Select
           id="test-selector"
           value={selectedTestId ?? ''}
           onChange={(event: ChangeEvent<HTMLSelectElement>) => setSelectedTestId(event.target.value || null)}
         >
-          <option value="">Nouveau test</option>
+          <option value="">{form('toolbar.newTest')}</option>
           {(tests ?? []).map((test) => (
             <option key={test.id} value={test.id}>
               {test.name}
             </option>
           ))}
         </Select>
-        {selectedTestId ? <Badge variant="outline">Mode édition</Badge> : <Badge>Nouvelle fiche</Badge>}
+        {selectedTestId ? <Badge variant="outline">{form('toolbar.editBadge')}</Badge> : <Badge>{form('toolbar.newBadge')}</Badge>}
       </div>
 
       <div className="notion-toolbar__group">
@@ -528,7 +563,7 @@ function TestForm() {
             setNewBibliography({ label: '', url: '' });
           }}
         >
-          Réinitialiser
+          {form('toolbar.reset')}
         </Button>
         <Button type="submit" disabled={submitDisabled} aria-busy={submitDisabled}>
           {submitLabel}
@@ -539,7 +574,7 @@ function TestForm() {
     <Input
       id="name"
       className="notion-title-input"
-      placeholder="Nom du test (ex : Évaluation du langage)"
+      placeholder={form('fields.name.placeholder')}
       {...register('name')}
     />
     {errors.name && <p className="error-text">{errors.name.message}</p>}
@@ -549,32 +584,32 @@ function TestForm() {
       {/* Résumé détaillé */}
       <Card>
         <CardHeader>
-          <CardTitle>Résumé détaillé</CardTitle>
+          <CardTitle>{form('sections.detailedSummary.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="property-value">
-            <Label htmlFor="shortDescription">Description longue</Label>
+            <Label htmlFor="shortDescription">{form('fields.shortDescription.label')}</Label>
             <Textarea
               id="shortDescription"
-              placeholder="Présentez l'outil et ce qui le rend unique."
+              placeholder={form('fields.shortDescription.placeholder')}
               {...register('shortDescription', { setValueAs: (value) => (value === '' ? null : value) })}
             />
           </div>
           <Separator />
           <div className="property-value">
-            <Label htmlFor="objective">Objectif</Label>
+            <Label htmlFor="objective">{form('fields.objective.label')}</Label>
             <Textarea
               id="objective"
-              placeholder="Que mesure ce test ? Dans quel contexte l'utiliser ?"
+              placeholder={form('fields.objective.placeholder')}
               {...register('objective', { setValueAs: (value) => (value === '' ? null : value) })}
             />
           </div>
           <Separator />
           <div className="property-value">
-            <Label htmlFor="notes">Notes internes</Label>
+            <Label htmlFor="notes">{form('fields.notes.label')}</Label>
             <Textarea
               id="notes"
-              placeholder="Observations internes ou liens vers des ressources connexes."
+              placeholder={form('fields.notes.placeholder')}
               {...register('notes', { setValueAs: (value) => (value === '' ? null : value) })}
             />
           </div>
@@ -584,38 +619,38 @@ function TestForm() {
       {/* Bibliographie (2ème bloc) */}
       <Card>
         <CardHeader>
-          <CardTitle>Bibliographie</CardTitle>
-          <p className="helper-text">Ajoutez des liens vers des articles, vidéos ou références utiles.</p>
+          <CardTitle>{form('sections.bibliography.title')}</CardTitle>
+          <p className="helper-text">{form('sections.bibliography.helper')}</p>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
             {(currentBibliography ?? []).length === 0 && (
               <p className={`helper-text ${styles.helperTight}`}>
-                Aucun lien pour le moment. Ajoutez votre première référence ci-dessous.
+                {form('sections.bibliography.empty')}
               </p>
             )}
 
             {(currentBibliography ?? []).map((entry, index) => (
               <div key={`${entry.label}-${index}`} className={`property-value ${styles.bibliographyEntry}`}>
-                <Label htmlFor={`bibliography-label-${index}`}>Titre ou source</Label>
+                <Label htmlFor={`bibliography-label-${index}`}>{form('bibliography.entryLabel')}</Label>
                 <Input
                   id={`bibliography-label-${index}`}
                   value={entry.label}
                   onChange={(event) => updateBibliographyItem(index, 'label', event.target.value)}
-                  placeholder="Article, vidéo, ouvrage…"
+                  placeholder={form('bibliography.entryPlaceholder')}
                 />
                 {errors.bibliography?.[index]?.label && (
                   <p className="error-text">{errors.bibliography?.[index]?.label?.message}</p>
                 )}
 
-                <Label htmlFor={`bibliography-url-${index}`}>Lien</Label>
+                <Label htmlFor={`bibliography-url-${index}`}>{form('bibliography.linkLabel')}</Label>
                 <div className="notion-toolbar__group">
                   <Input
                     id={`bibliography-url-${index}`}
                     type="url"
                     value={entry.url}
                     onChange={(event) => updateBibliographyItem(index, 'url', event.target.value)}
-                    placeholder="https://example.com/ressource"
+                    placeholder={form('bibliography.linkPlaceholder')}
                   />
                   <Button
                     type="button"
@@ -623,7 +658,7 @@ function TestForm() {
                     size="sm"
                     onClick={() => removeBibliographyItem(index)}
                   >
-                    Supprimer
+                    {form('bibliography.remove')}
                   </Button>
                 </div>
                 {errors.bibliography?.[index]?.url && (
@@ -635,10 +670,10 @@ function TestForm() {
           </div>
 
           <div className={`property-value ${styles.bibliographyCreate}`}>
-            <Label htmlFor="bibliography-new-label">Ajouter une référence</Label>
+            <Label htmlFor="bibliography-new-label">{form('bibliography.addTitle')}</Label>
             <Input
               id="bibliography-new-label"
-              placeholder="Titre de la ressource"
+              placeholder={form('bibliography.addPlaceholder')}
               value={newBibliography.label}
               onChange={(event) => setNewBibliography((prev) => ({ ...prev, label: event.target.value }))}
             />
@@ -646,16 +681,16 @@ function TestForm() {
               <Input
                 id="bibliography-new-url"
                 type="url"
-                placeholder="https://exemple.com/ressource"
+                placeholder={form('bibliography.addUrlPlaceholder')}
                 value={newBibliography.url}
                 onChange={(event) => setNewBibliography((prev) => ({ ...prev, url: event.target.value }))}
               />
               <Button type="button" variant="outline" size="sm" onClick={addBibliographyItem}>
-                Ajouter
+                {form('bibliography.addButton')}
               </Button>
             </div>
             <p className={`helper-text ${styles.helperTight}`}>
-              Indiquez un titre court et une URL valide. Les liens seront enregistrés avec le test.
+              {form('bibliography.addHelper')}
             </p>
           </div>
         </CardContent>
@@ -664,14 +699,14 @@ function TestForm() {
       {/* Informations complémentaires (3e carte dans la grid, mais avant Propriétés) */}
       <Card>
         <CardHeader>
-          <CardTitle>Informations complémentaires</CardTitle>
+          <CardTitle>{form('sections.additionalInfo.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="property-value">
-            <Label htmlFor="population-secondary">Public cible</Label>
+            <Label htmlFor="population-secondary">{form('fields.populationDetailed.label')}</Label>
             <Input
               id="population-secondary"
-              placeholder="Compléter le public si besoin"
+              placeholder={form('fields.populationDetailed.placeholder')}
               value={populationValue ?? ''}
               onChange={(event) =>
                 setValue('population', event.target.value === '' ? null : event.target.value, { shouldDirty: true })
@@ -680,10 +715,10 @@ function TestForm() {
           </div>
           <Separator />
           <div className="property-value">
-            <Label htmlFor="materials-secondary">Matériel détaillé</Label>
+            <Label htmlFor="materials-secondary">{form('fields.materialsDetailed.label')}</Label>
             <Textarea
               id="materials-secondary"
-              placeholder="Listez le matériel précis, les grilles ou supports nécessaires."
+              placeholder={form('fields.materialsDetailed.placeholder')}
               value={materialsValue ?? ''}
               onChange={(event) =>
                 setValue('materials', event.target.value === '' ? null : event.target.value, { shouldDirty: true })
@@ -697,26 +732,26 @@ function TestForm() {
     {/* 3. Propriétés (déplacé après le contenu détaillé + biblio) */}
     <Card className="property-panel">
   <CardHeader>
-    <CardTitle>Propriétés</CardTitle>
-    <p className="helper-text">Pensez aux propriétés clés comme dans une fiche Notion.</p>
+    <CardTitle>{form('sections.properties.title')}</CardTitle>
+    <p className="helper-text">{form('sections.properties.helper')}</p>
   </CardHeader>
 
   <CardContent className={styles.propertySections}>
 
     {/* --- Ciblage & durée --- */}
     <div className={styles.sectionBlock}>
-      <p className={styles.sectionTitle}>Ciblage & durée</p>
+      <p className={styles.sectionTitle}>{form('sections.properties.targetingTitle')}</p>
       <div className="property-grid">
 
         {/* Âge (mois) */}
         <div className="property-row">
-          <div className="property-label">Âge (mois)</div>
+          <div className="property-label">{form('fields.age.label')}</div>
           <div className="property-value">
             <div className={styles.ageGrid}>
               <Input
                 id="ageMinMonths"
                 type="number"
-                placeholder="36"
+                placeholder={form('fields.age.minPlaceholder')}
                 {...register('ageMinMonths', {
                   setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
                 })}
@@ -724,7 +759,7 @@ function TestForm() {
               <Input
                 id="ageMaxMonths"
                 type="number"
-                placeholder="120"
+                placeholder={form('fields.age.maxPlaceholder')}
                 {...register('ageMaxMonths', {
                   setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
                 })}
@@ -741,12 +776,12 @@ function TestForm() {
 
         {/* Durée */}
         <div className="property-row">
-          <div className="property-label">Durée</div>
+          <div className="property-label">{form('fields.duration.label')}</div>
           <div className="property-value">
             <Input
               id="durationMinutes"
               type="number"
-              placeholder="45"
+              placeholder={form('fields.duration.placeholder')}
               {...register('durationMinutes', {
                 setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
               })}
@@ -754,17 +789,17 @@ function TestForm() {
             {errors.durationMinutes && (
               <p className="error-text">{errors.durationMinutes.message}</p>
             )}
-            <p className="helper-text">Temps moyen estimé en minutes.</p>
+            <p className="helper-text">{form('fields.duration.helper')}</p>
           </div>
         </div>
 
         {/* Population */}
         <div className="property-row">
-          <div className="property-label">Population</div>
+          <div className="property-label">{form('fields.population.label')}</div>
           <div className="property-value">
             <Input
               id="population"
-              placeholder="Enfants, adolescents, adultes…"
+              placeholder={form('fields.population.placeholder')}
               {...register('population', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
@@ -777,23 +812,23 @@ function TestForm() {
 
     {/* --- Édition & accès --- */}
     <div className={styles.sectionBlock}>
-      <p className={styles.sectionTitle}>Édition & accès</p>
+      <p className={styles.sectionTitle}>{form('sections.properties.publishingTitle')}</p>
       <div className="property-grid">
 
         {/* Éditeur */}
         <div className="property-row">
-          <div className="property-label">Éditeur</div>
+          <div className="property-label">{form('fields.publisher.label')}</div>
           <div className="property-value">
             <Input
               id="publisher"
-              placeholder="Maison d'édition"
+              placeholder={form('fields.publisher.placeholder')}
               {...register('publisher', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
             />
             <Input
               id="priceRange"
-              placeholder="Fourchette de prix"
+              placeholder={form('fields.priceRange.placeholder')}
               {...register('priceRange', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
@@ -803,11 +838,11 @@ function TestForm() {
 
         {/* Achat */}
         <div className="property-row">
-          <div className="property-label">Achat</div>
+          <div className="property-label">{form('fields.purchase.label')}</div>
           <div className="property-value">
             <Input
               id="buyLink"
-              placeholder="Lien d'achat (URL)"
+              placeholder={form('fields.buyLink.placeholder')}
               {...register('buyLink', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
@@ -817,7 +852,7 @@ function TestForm() {
             )}
             <Input
               id="materials"
-              placeholder="Matériel requis"
+              placeholder={form('fields.materials.placeholder')}
               {...register('materials', {
                 setValueAs: (value) => (value === '' ? null : value),
               })}
@@ -827,7 +862,7 @@ function TestForm() {
 
         {/* Standardisation */}
         <div className="property-row">
-          <div className="property-label">Standardisation</div>
+          <div className="property-label">{form('fields.standardization.label')}</div>
           <div className="property-value">
             <label
               className={cn(
@@ -840,9 +875,11 @@ function TestForm() {
                 {...register('isStandardized')}
                 className={styles.hiddenInput}
               />
-              {watch('isStandardized') ? 'Standardisé' : 'Non standardisé'}
+              {watch('isStandardized')
+                ? form('fields.standardization.standardized')
+                : form('fields.standardization.nonStandardized')}
             </label>
-            <p className="helper-text">Basculer selon la nature du protocole.</p>
+            <p className="helper-text">{form('fields.standardization.helper')}</p>
           </div>
         </div>
 
@@ -851,18 +888,18 @@ function TestForm() {
 
     {/* --- Taxonomie --- */}
     <div className={styles.sectionBlock}>
-      <p className={styles.sectionTitle}>Taxonomie</p>
+      <p className={styles.sectionTitle}>{form('sections.taxonomy.title')}</p>
       <div className="property-grid">
 
         {/* Domaines */}
         <div className="property-row">
-          <div className="property-label">Domaines</div>
+          <div className="property-label">{form('fields.domains.label')}</div>
           <div className="property-value">
             <MultiSelect
               id="domains"
-              label="Domaines"
-              description="Affinez la fiche en ajoutant un ou plusieurs domaines."
-              placeholder="Rechercher un domaine"
+              label={form('fields.domains.label')}
+              description={form('fields.domains.description')}
+              placeholder={form('fields.domains.placeholder')}
               options={(taxonomy?.domains ?? []).map((domain) => ({
                 label: domain.label,
                 value: domain.label,
@@ -877,13 +914,13 @@ function TestForm() {
 
         {/* Tags */}
         <div className="property-row">
-          <div className="property-label">Tags</div>
+          <div className="property-label">{form('fields.tags.label')}</div>
           <div className="property-value">
             <MultiSelect
               id="tags"
-              label="Tags"
-              description="Ajoutez des mots-clés pour faciliter la recherche."
-              placeholder="Rechercher un tag"
+              label={form('fields.tags.label')}
+              description={form('fields.tags.description')}
+              placeholder={form('fields.tags.placeholder')}
               options={(taxonomy?.tags ?? []).map((tag) => ({
                 label: tag.label,
                 value: tag.label,
@@ -904,13 +941,13 @@ function TestForm() {
 
     {(createMutation.isError || updateMutation.isError) && (
       <p className={`error-text ${styles.flushError}`}>
-        {createMutation.error?.message || updateMutation.error?.message || 'Une erreur est survenue.'}
+        {translateHandlerError(createMutation.error?.message ?? updateMutation.error?.message ?? null)}
       </p>
     )}
 
     {(createMutation.isSuccess || updateMutation.isSuccess) && !createMutation.isError && !updateMutation.isError && (
       <p className={styles.successMessage}>
-        Le test et ses relations ont été enregistrés.
+        {feedback('success.saved')}
       </p>
     )}
   </form>

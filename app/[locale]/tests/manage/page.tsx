@@ -1,23 +1,44 @@
+import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+import { notFound } from 'next/navigation';
 import TestForm from './TestForm';
 import styles from './manage-page.module.css';
+import { locales, type Locale } from '@/i18n/routing';
 
-export const metadata = {
-  title: 'Gérer les tests | Othoutils',
-  description: 'Ajoutez ou mettez à jour un test avec ses domaines et tags.',
+type LocalePageProps = {
+  params: Promise<{ locale: string }>;
 };
 
-export default function ManageTestsPage() {
+export async function generateMetadata({ params }: LocalePageProps): Promise<Metadata> {
+  const { locale } = await params;
+
+  if (!locales.includes(locale as Locale)) {
+    notFound();
+  }
+
+  const t = await getTranslations({ locale, namespace: 'ManageTests.metadata' });
+
+  return {
+    title: t('title'),
+    description: t('description'),
+    metadataBase: new URL('https://othoutils.example.com'),
+  };
+}
+
+export default async function ManageTestsPage() {
+  const t = await getTranslations('ManageTests.page');
+
   return (
     <main className={`container section-shell ${styles.page}`}>
       <div className="section-title">
         <span />
-        <p className={styles.sectionLabel}>Créer ou mettre à jour un test</p>
+        <p className={styles.sectionLabel}>{t('sectionLabel')}</p>
       </div>
 
       <div className={`glass panel ${styles.introPanel}`}>
-        <h1 className={styles.pageTitle}>Ajouter / Éditer un test</h1>
+        <h1 className={styles.pageTitle}>{t('title')}</h1>
         <p className={`text-subtle ${styles.pageLead}`}>
-          Utilisez ce formulaire pour créer un test ou modifier une fiche existante, y compris ses tags et domaines associés.
+          {t('lead')}
         </p>
       </div>
 
