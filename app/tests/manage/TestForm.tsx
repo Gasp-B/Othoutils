@@ -288,7 +288,7 @@ const defaultValues: FormValues = {
   population: null,
   durationMinutes: null,
   materials: null,
-  isStandardized: false,
+  isStandardized: true,
   publisher: null,
   priceRange: null,
   buyLink: null,
