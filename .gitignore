@@ -6,3 +6,4 @@ out
 dist
 npm-debug.log*
 *.tsbuildinfo
+/.vs
