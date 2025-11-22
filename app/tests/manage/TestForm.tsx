@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -16,6 +16,233 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils/cn';
 import { testsResponseSchema, testSchema, taxonomyResponseSchema, type TestDto } from '@/lib/validation/tests';
 import styles from './test-form.module.css';
+
+type MultiSelectOption = { label: string; value: string };
+
+type MultiSelectProps = {
+  id: string;
+  label: string;
+  description?: string;
+  placeholder?: string;
+  options: MultiSelectOption[];
+  values: string[];
+  onChange: (values: string[]) => void;
+};
+
+type PopupPosition = { top: number; left: number; width: number } | null;
+
+function MultiSelect({ id, label, description, placeholder, options, values, onChange }: MultiSelectProps) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [popupPosition, setPopupPosition] = useState<PopupPosition>(null);
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return options;
+    return options.filter((option) => option.label.toLowerCase().includes(term));
+  }, [options, query]);
+
+  const selectedOptions = useMemo(
+    () => options.filter((option) => values.includes(option.value)),
+    [options, values],
+  );
+
+  function toggleValue(value: string) {
+    const hasValue = values.includes(value);
+    const next = hasValue ? values.filter((item) => item !== value) : [...values, value];
+    onChange(next);
+  }
+
+  function closePopup() {
+    setIsOpen(false);
+  }
+
+  function updatePopupPosition() {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const viewportWidth = window.innerWidth;
+
+    const popupWidth = Math.min(Math.max(rect.width, 320), Math.min(520, viewportWidth - 24));
+    const maxLeft = viewportWidth - popupWidth - 12;
+    const left = Math.min(Math.max(12, rect.left), Math.max(12, maxLeft));
+
+    const top = Math.min(rect.bottom + 8, window.innerHeight - 16);
+
+    setPopupPosition({
+      top,
+      left,
+      width: popupWidth,
+    });
+  }
+
+  useEffect(() => {
+    if (!isOpen) {
+      setQuery('');
+      return;
+    }
+
+    updatePopupPosition();
+    const handleResize = () => updatePopupPosition();
+    const handleScroll = () => updatePopupPosition();
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!isOpen) return;
+      const target = event.target as Node;
+      if (wrapperRef.current?.contains(target)) return;
+      if (overlayRef.current?.contains(target)) return;
+      closePopup();
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closePopup();
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className={styles.multiSelectWrapper} ref={wrapperRef}>
+      <div className={styles.multiSelectHeader}>
+        <Label htmlFor={id}>{label}</Label>
+        {description ? <p className="helper-text">{description}</p> : null}
+      </div>
+      <button
+        type="button"
+        id={id}
+        className={cn(styles.multiSelectControl, isOpen && styles.multiSelectOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
+        ref={triggerRef}
+      >
+        <div className={styles.multiSelectTokens}>
+          {values.length === 0 ? (
+            <span className="text-subtle">{placeholder ?? 'Sélectionner'}</span>
+          ) : (
+            values.map((value) => (
+              <Badge
+                key={value}
+                variant="secondary"
+                className={styles.token}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleValue(value);
+                }}
+              >
+                {value}
+                <span aria-hidden>×</span>
+              </Badge>
+            ))
+          )}
+        </div>
+        <span className={styles.chevron} aria-hidden>
+          {isOpen ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div className={styles.popupLayer}>
+          <div className={styles.popupBackdrop} aria-hidden onClick={closePopup} />
+          <div
+            className={styles.popup}
+            ref={overlayRef}
+            style={popupPosition ? { top: popupPosition.top, left: popupPosition.left, width: popupPosition.width } : undefined}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Sélectionner ${label}`}
+          >
+            <div className={styles.popupHeader}>
+              <div className={styles.popupTitle}>Sélectionner {label.toLowerCase()}</div>
+              <p className="helper-text">Tapez pour filtrer, cliquez pour ajouter ou retirer.</p>
+            </div>
+
+            <div className={styles.searchBar}>
+              <Input
+                ref={searchInputRef}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={placeholder ?? 'Rechercher…'}
+                aria-label={`Filtrer ${label}`}
+              />
+              {query ? (
+                <Button variant="ghost" size="sm" type="button" onClick={() => setQuery('')}>
+                  Effacer
+                </Button>
+              ) : null}
+            </div>
+
+            <div className={styles.selectedBadges}>
+              {selectedOptions.length === 0 ? (
+                <p className="helper-text">Aucun élément sélectionné pour le moment.</p>
+              ) : (
+                selectedOptions.map((option) => (
+                  <Badge
+                    key={option.value}
+                    variant="outline"
+                    className={styles.selectedToken}
+                    onClick={() => toggleValue(option.value)}
+                  >
+                    {option.label}
+                    <span aria-hidden>×</span>
+                  </Badge>
+                ))
+              )}
+            </div>
+
+            <div className={styles.optionsList}>
+              {filtered.length === 0 ? (
+                <p className={styles.emptyState}>Aucun résultat</p>
+              ) : (
+                filtered.map((option) => {
+                  const active = values.includes(option.value);
+                  return (
+                    <button
+                      type="button"
+                      key={option.value}
+                      className={cn(styles.optionItem, active && styles.optionItemActive)}
+                      onClick={() => toggleValue(option.value)}
+                    >
+                      <span className={styles.optionLabel}>{option.label}</span>
+                      <span className={styles.optionBadge}>{active ? 'Supprimer' : 'Ajouter'}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 const formSchema = testSchema
   .omit({ id: true, slug: true, createdAt: true, updatedAt: true })
@@ -279,7 +506,7 @@ function TestForm() {
           <Select
             id="test-selector"
             value={selectedTestId ?? ''}
-            onChange={(event) => setSelectedTestId(event.target.value || null)}
+            onChange={(event: ChangeEvent<HTMLSelectElement>) => setSelectedTestId(event.target.value || null)}
           >
             <option value="">Nouveau test</option>
             {(tests ?? []).map((test) => (
@@ -322,148 +549,153 @@ function TestForm() {
           <CardTitle>Propriétés</CardTitle>
           <p className="helper-text">Pensez aux propriétés clés comme dans une fiche Notion.</p>
         </CardHeader>
-        <CardContent className="property-grid">
-          <div className="property-row">
-            <div className="property-label">Âge (mois)</div>
-            <div className="property-value">
-              <div className={styles.ageGrid}>
-                <Input
-                  id="ageMinMonths"
-                  type="number"
-                  placeholder="36"
-                  {...register('ageMinMonths', {
-                    setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
-                  })}
-                />
-                <Input
-                  id="ageMaxMonths"
-                  type="number"
-                  placeholder="120"
-                  {...register('ageMaxMonths', {
-                    setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
-                  })}
-                />
+        <CardContent className={styles.propertySections}>
+          <div className={styles.sectionBlock}>
+            <p className={styles.sectionTitle}>Ciblage & durée</p>
+            <div className="property-grid">
+              <div className="property-row">
+                <div className="property-label">Âge (mois)</div>
+                <div className="property-value">
+                  <div className={styles.ageGrid}>
+                    <Input
+                      id="ageMinMonths"
+                      type="number"
+                      placeholder="36"
+                      {...register('ageMinMonths', {
+                        setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
+                      })}
+                    />
+                    <Input
+                      id="ageMaxMonths"
+                      type="number"
+                      placeholder="120"
+                      {...register('ageMaxMonths', {
+                        setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
+                      })}
+                    />
+                  </div>
+                  {(errors.ageMinMonths || errors.ageMaxMonths) && (
+                    <p className="error-text">{errors.ageMinMonths?.message || errors.ageMaxMonths?.message}</p>
+                  )}
+                </div>
               </div>
-              {(errors.ageMinMonths || errors.ageMaxMonths) && (
-                <p className="error-text">{errors.ageMinMonths?.message || errors.ageMaxMonths?.message}</p>
-              )}
+
+              <div className="property-row">
+                <div className="property-label">Durée</div>
+                <div className="property-value">
+                  <Input
+                    id="durationMinutes"
+                    type="number"
+                    placeholder="45"
+                    {...register('durationMinutes', {
+                      setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
+                    })}
+                  />
+                  {errors.durationMinutes && <p className="error-text">{errors.durationMinutes.message}</p>}
+                  <p className="helper-text">Temps moyen estimé en minutes.</p>
+                </div>
+              </div>
+
+              <div className="property-row">
+                <div className="property-label">Population</div>
+                <div className="property-value">
+                  <Input
+                    id="population"
+                    placeholder="Enfants, adolescents, adultes…"
+                    {...register('population', { setValueAs: (value) => (value === '' ? null : value) })}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="property-row">
-            <div className="property-label">Durée</div>
-            <div className="property-value">
-              <Input
-                id="durationMinutes"
-                type="number"
-                placeholder="45"
-                {...register('durationMinutes', {
-                  setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
-                })}
-              />
-              {errors.durationMinutes && <p className="error-text">{errors.durationMinutes.message}</p>}
-              <p className="helper-text">Temps moyen estimé en minutes.</p>
+          <div className={styles.sectionBlock}>
+            <p className={styles.sectionTitle}>Édition & accès</p>
+            <div className="property-grid">
+              <div className="property-row">
+                <div className="property-label">Éditeur</div>
+                <div className="property-value">
+                  <Input
+                    id="publisher"
+                    placeholder="Maison d'édition"
+                    {...register('publisher', { setValueAs: (value) => (value === '' ? null : value) })}
+                  />
+                  <Input
+                    id="priceRange"
+                    placeholder="Fourchette de prix"
+                    {...register('priceRange', { setValueAs: (value) => (value === '' ? null : value) })}
+                  />
+                </div>
+              </div>
+
+              <div className="property-row">
+                <div className="property-label">Achat</div>
+                <div className="property-value">
+                  <Input
+                    id="buyLink"
+                    placeholder="Lien d'achat (URL)"
+                    {...register('buyLink', { setValueAs: (value) => (value === '' ? null : value) })}
+                  />
+                  {errors.buyLink && <p className="error-text">{errors.buyLink.message}</p>}
+                  <Input
+                    id="materials"
+                    placeholder="Matériel requis"
+                    {...register('materials', { setValueAs: (value) => (value === '' ? null : value) })}
+                  />
+                </div>
+              </div>
+
+              <div className="property-row">
+                <div className="property-label">Standardisation</div>
+                <div className="property-value">
+                  <label className={cn('pill-toggle', watch('isStandardized') && 'is-active')}>
+                    <input type="checkbox" {...register('isStandardized')} className={styles.hiddenInput} />
+                    {watch('isStandardized') ? 'Standardisé' : 'Non standardisé'}
+                  </label>
+                  <p className="helper-text">Basculer selon la nature du protocole.</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="property-row">
-            <div className="property-label">Population</div>
-            <div className="property-value">
-              <Input
-                id="population"
-                placeholder="Enfants, adolescents, adultes…"
-                {...register('population', { setValueAs: (value) => (value === '' ? null : value) })}
-              />
-            </div>
-          </div>
+          <div className={styles.sectionBlock}>
+            <p className={styles.sectionTitle}>Taxonomie</p>
+            <div className="property-grid">
+              <div className="property-row">
+                <div className="property-label">Domaines</div>
+                <div className="property-value">
+                  <MultiSelect
+                    id="domains"
+                    label="Domaines"
+                    description="Affinez la fiche en ajoutant un ou plusieurs domaines."
+                    placeholder="Rechercher un domaine"
+                    options={(taxonomy?.domains ?? []).map((domain) => ({
+                      label: domain.label,
+                      value: domain.label,
+                    }))}
+                    values={currentDomains ?? []}
+                    onChange={(values) => setValue('domains', values, { shouldDirty: true })}
+                  />
+                </div>
+              </div>
 
-          <div className="property-row">
-            <div className="property-label">Éditeur</div>
-            <div className="property-value">
-              <Input
-                id="publisher"
-                placeholder="Maison d'édition"
-                {...register('publisher', { setValueAs: (value) => (value === '' ? null : value) })}
-              />
-              <Input
-                id="priceRange"
-                placeholder="Fourchette de prix"
-                {...register('priceRange', { setValueAs: (value) => (value === '' ? null : value) })}
-              />
-            </div>
-          </div>
-
-          <div className="property-row">
-            <div className="property-label">Achat</div>
-            <div className="property-value">
-              <Input
-                id="buyLink"
-                placeholder="Lien d'achat (URL)"
-                {...register('buyLink', { setValueAs: (value) => (value === '' ? null : value) })}
-              />
-              {errors.buyLink && <p className="error-text">{errors.buyLink.message}</p>}
-              <Input
-                id="materials"
-                placeholder="Matériel requis"
-                {...register('materials', { setValueAs: (value) => (value === '' ? null : value) })}
-              />
-            </div>
-          </div>
-
-          <div className="property-row">
-            <div className="property-label">Standardisation</div>
-            <div className="property-value">
-              <label className={cn('pill-toggle', watch('isStandardized') && 'is-active')}>
-                <input type="checkbox" {...register('isStandardized')} className={styles.hiddenInput} />
-                {watch('isStandardized') ? 'Standardisé' : 'Non standardisé'}
-              </label>
-              <p className="helper-text">Basculer selon la nature du protocole.</p>
-            </div>
-          </div>
-
-          <div className="property-row">
-            <div className="property-label">Domaines</div>
-            <div className="property-value">
-              <Label htmlFor="domains">Sélectionnez un ou plusieurs domaines</Label>
-              <Select
-                id="domains"
-                multiple
-                value={currentDomains ?? []}
-                onChange={(event) => {
-                  const selectedValues = Array.from(event.target.selectedOptions).map((option) => option.value);
-                  setValue('domains', selectedValues, { shouldDirty: true });
-                }}
-              >
-                {(taxonomy?.domains ?? []).map((domain) => (
-                  <option key={domain.id} value={domain.label}>
-                    {domain.label}
-                  </option>
-                ))}
-              </Select>
-              <p className="helper-text">Domaines actifs : {(currentDomains ?? []).join(', ') || 'aucun'}</p>
-            </div>
-          </div>
-
-          <div className="property-row">
-            <div className="property-label">Tags</div>
-            <div className="property-value">
-              <Label htmlFor="tags">Sélectionnez un ou plusieurs tags</Label>
-              <Select
-                id="tags"
-                multiple
-                value={currentTags ?? []}
-                onChange={(event) => {
-                  const selectedValues = Array.from(event.target.selectedOptions).map((option) => option.value);
-                  setValue('tags', selectedValues, { shouldDirty: true });
-                }}
-              >
-                {(taxonomy?.tags ?? []).map((tag) => (
-                  <option key={tag.id} value={tag.label}>
-                    {tag.label}
-                  </option>
-                ))}
-              </Select>
-              <p className="helper-text">Tags actifs : {(currentTags ?? []).join(', ') || 'aucun'}</p>
+              <div className="property-row">
+                <div className="property-label">Tags</div>
+                <div className="property-value">
+                  <MultiSelect
+                    id="tags"
+                    label="Tags"
+                    description="Ajoutez des mots-clés pour faciliter la recherche."
+                    placeholder="Rechercher un tag"
+                    options={(taxonomy?.tags ?? []).map((tag) => ({
+                      label: tag.label,
+                      value: tag.label,
+                    }))}
+                    values={currentTags ?? []}
+                    onChange={(values) => setValue('tags', values, { shouldDirty: true })}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </CardContent>
