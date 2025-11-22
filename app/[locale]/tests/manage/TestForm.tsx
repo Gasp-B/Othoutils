@@ -320,7 +320,7 @@ const defaultValues: FormValues = {
   bibliography: [],
 };
 
-async function fetchTests(errorMessage: string) {
+async function fetchTests() {
   const response = await fetch('/api/tests');
 
   if (!response.ok) {
@@ -332,7 +332,7 @@ async function fetchTests(errorMessage: string) {
   return parsed.tests;
 }
 
-async function fetchTaxonomy(errorMessage: string) {
+async function fetchTaxonomy() {
   const response = await fetch('/api/tests/taxonomy');
 
   if (!response.ok) {
@@ -342,7 +342,6 @@ async function fetchTaxonomy(errorMessage: string) {
   const json = await response.json();
   return taxonomyResponseSchema.parse(json);
 }
-
 async function createTest(payload: FormValues, fallbackMessage: string) {
   const response = await fetch('/api/tests', {
     method: 'POST',
