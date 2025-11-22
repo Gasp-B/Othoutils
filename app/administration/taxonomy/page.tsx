@@ -1,3 +1,6 @@
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 import TaxonomyManager from './TaxonomyManager';
 import styles from './taxonomy-page.module.css';
 
