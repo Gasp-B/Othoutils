@@ -24,11 +24,11 @@ function Header() {
           throw new Error(`HTTP ${res.status}`);
         }
 
-        const json = await res.json();
+        const data: { domains?: CatalogueDomain[] } = await res.json();
 
         if (!cancelled) {
           // On suppose que l’API renvoie { domains: [...] }
-          setCatalogueDomains(json.domains ?? []);
+          setCatalogueDomains(data.domains ?? []);
         }
       } catch (err) {
         console.error('[Header] Failed to load catalogue:', err);
@@ -42,7 +42,7 @@ function Header() {
       }
     }
 
-    loadCatalogue();
+    void loadCatalogue();
 
     return () => {
       cancelled = true;

@@ -1,6 +1,6 @@
 // app/api/catalogue/route.ts
 import { NextResponse } from 'next/server';
-import { createRouteHandlerSupabaseClient } from '@/lib/supabaseClient';
+import { createRouteHandlerSupabaseClient, supabaseAdmin } from '@/lib/supabaseClient';
 import type { CatalogueDomain } from '@/lib/navigation/catalogue';
 
 type DomainRow = {
@@ -11,7 +11,11 @@ type DomainRow = {
 
 export async function GET() {
   try {
-    const supabase = createRouteHandlerSupabaseClient();
+    const supabase = supabaseAdmin ?? createRouteHandlerSupabaseClient();
+
+    if (!supabase) {
+      throw new Error('Le client Supabase administrateur est indisponible');
+    }
 
     const { data, error } = await supabase
       .from('domains')
