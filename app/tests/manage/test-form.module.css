@@ -1,34 +1,303 @@
-.ageGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 0.5rem;
+@@ -7,148 +7,250 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { z } from 'zod';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils/cn';
+import { testsResponseSchema, testSchema, taxonomyResponseSchema, type TestDto } from '@/lib/validation/tests';
+import styles from './test-form.module.css';
+
+type MultiSelectOption = { label: string; value: string };
+
+type MultiSelectProps = {
+  id: string;
+  label: string;
+  description?: string;
+  placeholder?: string;
+  options: MultiSelectOption[];
+  values: string[];
+  onChange: (values: string[]) => void;
+};
+
+type PopupPosition = { top: number; left: number; width: number } | null;
+
+function MultiSelect({ id, label, description, placeholder, options, values, onChange }: MultiSelectProps) {
+  const [query, setQuery] = useState('');
+  const [isOpen, setIsOpen] = useState(false);
+  const [popupPosition, setPopupPosition] = useState<PopupPosition>(null);
+
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    if (!term) return options;
+    return options.filter((option) => option.label.toLowerCase().includes(term));
+  }, [options, query]);
+
+  const selectedOptions = useMemo(
+    () => options.filter((option) => values.includes(option.value)),
+    [options, values],
+  );
+
+  function toggleValue(value: string) {
+    const hasValue = values.includes(value);
+    const next = hasValue ? values.filter((item) => item !== value) : [...values, value];
+    onChange(next);
+  }
+
+  function closePopup() {
+    setIsOpen(false);
+  }
+
+  function updatePopupPosition() {
+    const rect = triggerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    setPopupPosition({
+      top: rect.bottom + window.scrollY + 8,
+      left: rect.left + window.scrollX,
+      width: rect.width,
+    });
+  }
+
+  useEffect(() => {
+    if (!isOpen) {
+      setQuery('');
+      return;
+    }
+
+    updatePopupPosition();
+    const handleResize = () => updatePopupPosition();
+    const handleScroll = () => updatePopupPosition();
+
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      searchInputRef.current?.focus();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      if (!isOpen) return;
+      const target = event.target as Node;
+      if (wrapperRef.current?.contains(target)) return;
+      if (overlayRef.current?.contains(target)) return;
+      closePopup();
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closePopup();
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div className={styles.multiSelectWrapper} ref={wrapperRef}>
+      <div className={styles.multiSelectHeader}>
+        <Label htmlFor={id}>{label}</Label>
+        {description ? <p className="helper-text">{description}</p> : null}
+      </div>
+      <button
+        type="button"
+        id={id}
+        className={cn(styles.multiSelectControl, isOpen && styles.multiSelectOpen)}
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-haspopup="dialog"
+        ref={triggerRef}
+      >
+        <div className={styles.multiSelectTokens}>
+          {values.length === 0 && <span className="text-subtle">{placeholder ?? 'Sélectionner'}</span>}
+          {values.map((value) => (
+            <Badge
+              key={value}
+              variant="secondary"
+              className={styles.token}
+              onClick={(event) => {
+                event.stopPropagation();
+                toggleValue(value);
+              }}
+            >
+              {value}
+              <span aria-hidden>×</span>
+            </Badge>
+          ))}
+          {values.length === 0 ? (
+            <span className="text-subtle">{placeholder ?? 'Sélectionner'}</span>
+          ) : (
+            values.map((value) => (
+              <Badge
+                key={value}
+                variant="secondary"
+                className={styles.token}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  toggleValue(value);
+                }}
+              >
+                {value}
+                <span aria-hidden>×</span>
+              </Badge>
+            ))
+          )}
+        </div>
+        <span className={styles.chevron} aria-hidden>
+          {isOpen ? '▴' : '▾'}
+        </span>
+      </button>
+
+      {isOpen ? (
+        <div className={styles.multiSelectDropdown} role="listbox" aria-label={label}>
+          <div className={styles.multiSelectSearch}>
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={placeholder ?? 'Rechercher…'}
+              aria-label={`Filtrer ${label}`}
+            />
+          </div>
+        <div className={styles.popupLayer}>
+          <div className={styles.popupBackdrop} aria-hidden onClick={closePopup} />
+          <div
+            className={styles.popup}
+            ref={overlayRef}
+            style={popupPosition ? { top: popupPosition.top, left: popupPosition.left, width: popupPosition.width } : undefined}
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Sélectionner ${label}`}
+          >
+            <div className={styles.popupHeader}>
+              <div className={styles.popupTitle}>Sélectionner {label.toLowerCase()}</div>
+              <p className="helper-text">Tapez pour filtrer, cliquez pour ajouter ou retirer.</p>
+            </div>
+
+            <div className={styles.searchBar}>
+              <Input
+                ref={searchInputRef}
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={placeholder ?? 'Rechercher…'}
+                aria-label={`Filtrer ${label}`}
+              />
+              {query ? (
+                <Button variant="ghost" size="sm" type="button" onClick={() => setQuery('')}>
+                  Effacer
+                </Button>
+              ) : null}
+            </div>
+
+            <div className={styles.selectedBadges}>
+              {selectedOptions.length === 0 ? (
+                <p className="helper-text">Aucun élément sélectionné pour le moment.</p>
+              ) : (
+                selectedOptions.map((option) => (
+                  <Badge
+                    key={option.value}
+                    variant="outline"
+                    className={styles.selectedToken}
+                    onClick={() => toggleValue(option.value)}
+                  >
+                    {option.label}
+                    <span aria-hidden>×</span>
+                  </Badge>
+                ))
+              )}
+            </div>
+
+          <div className={styles.optionsList}>
+            {filtered.length === 0 ? (
+              <p className={styles.emptyState}>Aucun résultat</p>
+            ) : (
+              filtered.map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={cn(styles.optionItem, values.includes(option.value) && styles.optionItemActive)}
+                  onClick={() => toggleValue(option.value)}
+                >
+                  <span>{option.label}</span>
+                  {values.includes(option.value) ? <Badge variant="outline">Sélectionné</Badge> : null}
+                </button>
+              ))
+            )}
+            <div className={styles.optionsList}>
+              {filtered.length === 0 ? (
+                <p className={styles.emptyState}>Aucun résultat</p>
+              ) : (
+                filtered.map((option) => {
+                  const active = values.includes(option.value);
+                  return (
+                    <button
+                      type="button"
+                      key={option.value}
+                      className={cn(styles.optionItem, active && styles.optionItemActive)}
+                      onClick={() => toggleValue(option.value)}
+                    >
+                      <span className={styles.optionLabel}>{option.label}</span>
+                      <span className={styles.optionBadge}>{active ? 'Supprimer' : 'Ajouter'}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
-.hiddenInput {
-  display: none;
-}
-
-.helperTight {
-  margin: 0;
-}
-
-.bibliographyEntry {
-  gap: 0.35rem;
-}
-
-.bibliographyCreate {
-  gap: 0.75rem;
-}
-
-.flushError {
-  margin: 0;
-}
-
-.successMessage {
-  margin: 0;
-  color: #16a34a;
-  font-weight: 600;
-}
+const formSchema = testSchema
+  .omit({ id: true, slug: true, createdAt: true, updatedAt: true })
+  .extend({
+    id: z.string().uuid().optional(),
+    shortDescription: z.string().nullable().optional(),
+    objective: z.string().nullable().optional(),
+    population: z.string().nullable().optional(),
+    materials: z.string().nullable().optional(),
+    publisher: z.string().nullable().optional(),
+    priceRange: z.string().nullable().optional(),
+    buyLink: z.string().url().nullable().optional(),
+    notes: z.string().nullable().optional(),
+    ageMinMonths: z.number().int().nullable().optional(),
+    ageMaxMonths: z.number().int().nullable().optional(),
+  durationMinutes: z.number().int().nullable().optional(),
+  bibliography: z
+    .array(
+      z.object({
+app/tests/manage/test-form.module.css
++99-30
+@@ -32,125 +32,194 @@
 
 .propertySections {
   display: grid;
@@ -54,6 +323,7 @@
 .multiSelectWrapper {
   display: grid;
   gap: 0.5rem;
+  position: relative;
 }
 
 .multiSelectHeader {
@@ -68,19 +338,25 @@
   align-items: center;
   justify-content: space-between;
   background: #ffffff;
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
   border: 1px solid #e2e8f0;
   border-radius: 0.75rem;
   padding: 0.65rem 0.85rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  border-radius: 0.9rem;
+  padding: 0.75rem 0.9rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .multiSelectControl:hover {
   border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 .multiSelectOpen {
   border-color: #3b82f6;
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
 }
 
 .multiSelectTokens {
@@ -97,6 +373,8 @@
   align-items: center;
   gap: 0.3rem;
   cursor: pointer;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
 }
 
 .chevron {
@@ -124,6 +402,8 @@
   display: grid;
   gap: 0.25rem;
   padding: 0.5rem;
+  gap: 0.35rem;
+  padding: 0.75rem;
 }
 
 .optionItem {
@@ -136,16 +416,36 @@
   border: 1px solid transparent;
   background: transparent;
   transition: background-color 0.1s ease, border-color 0.1s ease;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.7rem;
+  border: 1px solid #e2e8f0;
+  background: #0f172a08;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.1s ease;
 }
 
 .optionItem:hover {
   background: #f8fafc;
   border-color: #e2e8f0;
+  background: #f1f5f9;
+  border-color: #dbeafe;
+  transform: translateY(-1px);
 }
 
 .optionItemActive {
   background: #eff6ff;
   border-color: #bfdbfe;
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+
+.optionLabel {
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.optionBadge {
+  font-size: 0.9rem;
+  color: #475569;
 }
 
 .emptyState {
@@ -153,4 +453,72 @@
   padding: 0.75rem;
   color: #94a3b8;
   text-align: center;
+}
+
+.popupLayer {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.popupBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.popup {
+  position: absolute;
+  background: #111827;
+  color: #f8fafc;
+  border-radius: 0.9rem;
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
+  border: 1px solid #1f2937;
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  pointer-events: auto;
+  min-width: 320px;
+  max-width: min(520px, 90vw);
+}
+
+.popupHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.popupTitle {
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.searchBar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.selectedBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  background: #0b1224;
+  border: 1px solid #1f2937;
+  border-radius: 0.7rem;
+  padding: 0.65rem 0.75rem;
+  min-height: 42px;
+}
+
+.selectedToken {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  background: #1f2937;
+  border-color: #334155;
+  color: #e2e8f0;
 }
