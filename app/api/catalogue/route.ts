@@ -4,24 +4,26 @@ import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // ⚠️ service role côté serveur ONLY
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function GET() {
   try {
-    // Adapte au schéma de ta BDD
-    const { data, error } = await supabase
-      .from('sections') // ou "domains", "categories" etc.
+    // Récupère les domaines
+    const { data: domains, error: domainError } = await supabase
+      .from('domains')
       .select('id, label, slug')
-      .order('position', { ascending: true });
+      .order('label', { ascending: true });
 
-    if (error) {
-      console.error('[GET /api/catalogue] Supabase error:', error);
+    if (domainError) {
+      console.error('[GET /api/catalogue] Supabase error:', domainError);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
 
+    // Renvoie la forme attendue par ton Header :
+    // { domains: CatalogueDomain[] }
     return NextResponse.json({
-      items: data ?? [],
+      domains: domains ?? [],
     });
   } catch (err) {
     console.error('[GET /api/catalogue] Unexpected error:', err);
