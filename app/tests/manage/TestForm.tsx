@@ -696,15 +696,211 @@ function TestForm() {
 
     {/* 3. Propriétés (déplacé après le contenu détaillé + biblio) */}
     <Card className="property-panel">
-      <CardHeader>
-        <CardTitle>Propriétés</CardTitle>
-        <p className="helper-text">Pensez aux propriétés clés comme dans une fiche Notion.</p>
-      </CardHeader>
-      <CardContent className={styles.propertySections}>
-        {/* ... tout ton bloc Ciblage & durée / Edition & accès / Taxonomie inchangé ... */}
-        {/* (reprends ici tel quel ton CardContent original) */}
-      </CardContent>
-    </Card>
+  <CardHeader>
+    <CardTitle>Propriétés</CardTitle>
+    <p className="helper-text">Pensez aux propriétés clés comme dans une fiche Notion.</p>
+  </CardHeader>
+
+  <CardContent className={styles.propertySections}>
+
+    {/* --- Ciblage & durée --- */}
+    <div className={styles.sectionBlock}>
+      <p className={styles.sectionTitle}>Ciblage & durée</p>
+      <div className="property-grid">
+
+        {/* Âge (mois) */}
+        <div className="property-row">
+          <div className="property-label">Âge (mois)</div>
+          <div className="property-value">
+            <div className={styles.ageGrid}>
+              <Input
+                id="ageMinMonths"
+                type="number"
+                placeholder="36"
+                {...register('ageMinMonths', {
+                  setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
+                })}
+              />
+              <Input
+                id="ageMaxMonths"
+                type="number"
+                placeholder="120"
+                {...register('ageMaxMonths', {
+                  setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
+                })}
+              />
+            </div>
+
+            {(errors.ageMinMonths || errors.ageMaxMonths) && (
+              <p className="error-text">
+                {errors.ageMinMonths?.message || errors.ageMaxMonths?.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Durée */}
+        <div className="property-row">
+          <div className="property-label">Durée</div>
+          <div className="property-value">
+            <Input
+              id="durationMinutes"
+              type="number"
+              placeholder="45"
+              {...register('durationMinutes', {
+                setValueAs: (value) => (value === '' || value === null ? null : Number(value)),
+              })}
+            />
+            {errors.durationMinutes && (
+              <p className="error-text">{errors.durationMinutes.message}</p>
+            )}
+            <p className="helper-text">Temps moyen estimé en minutes.</p>
+          </div>
+        </div>
+
+        {/* Population */}
+        <div className="property-row">
+          <div className="property-label">Population</div>
+          <div className="property-value">
+            <Input
+              id="population"
+              placeholder="Enfants, adolescents, adultes…"
+              {...register('population', {
+                setValueAs: (value) => (value === '' ? null : value),
+              })}
+            />
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {/* --- Édition & accès --- */}
+    <div className={styles.sectionBlock}>
+      <p className={styles.sectionTitle}>Édition & accès</p>
+      <div className="property-grid">
+
+        {/* Éditeur */}
+        <div className="property-row">
+          <div className="property-label">Éditeur</div>
+          <div className="property-value">
+            <Input
+              id="publisher"
+              placeholder="Maison d'édition"
+              {...register('publisher', {
+                setValueAs: (value) => (value === '' ? null : value),
+              })}
+            />
+            <Input
+              id="priceRange"
+              placeholder="Fourchette de prix"
+              {...register('priceRange', {
+                setValueAs: (value) => (value === '' ? null : value),
+              })}
+            />
+          </div>
+        </div>
+
+        {/* Achat */}
+        <div className="property-row">
+          <div className="property-label">Achat</div>
+          <div className="property-value">
+            <Input
+              id="buyLink"
+              placeholder="Lien d'achat (URL)"
+              {...register('buyLink', {
+                setValueAs: (value) => (value === '' ? null : value),
+              })}
+            />
+            {errors.buyLink && (
+              <p className="error-text">{errors.buyLink.message}</p>
+            )}
+            <Input
+              id="materials"
+              placeholder="Matériel requis"
+              {...register('materials', {
+                setValueAs: (value) => (value === '' ? null : value),
+              })}
+            />
+          </div>
+        </div>
+
+        {/* Standardisation */}
+        <div className="property-row">
+          <div className="property-label">Standardisation</div>
+          <div className="property-value">
+            <label
+              className={cn(
+                'pill-toggle',
+                watch('isStandardized') && 'is-active'
+              )}
+            >
+              <input
+                type="checkbox"
+                {...register('isStandardized')}
+                className={styles.hiddenInput}
+              />
+              {watch('isStandardized') ? 'Standardisé' : 'Non standardisé'}
+            </label>
+            <p className="helper-text">Basculer selon la nature du protocole.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    {/* --- Taxonomie --- */}
+    <div className={styles.sectionBlock}>
+      <p className={styles.sectionTitle}>Taxonomie</p>
+      <div className="property-grid">
+
+        {/* Domaines */}
+        <div className="property-row">
+          <div className="property-label">Domaines</div>
+          <div className="property-value">
+            <MultiSelect
+              id="domains"
+              label="Domaines"
+              description="Affinez la fiche en ajoutant un ou plusieurs domaines."
+              placeholder="Rechercher un domaine"
+              options={(taxonomy?.domains ?? []).map((domain) => ({
+                label: domain.label,
+                value: domain.label,
+              }))}
+              values={currentDomains ?? []}
+              onChange={(values) =>
+                setValue('domains', values, { shouldDirty: true })
+              }
+            />
+          </div>
+        </div>
+
+        {/* Tags */}
+        <div className="property-row">
+          <div className="property-label">Tags</div>
+          <div className="property-value">
+            <MultiSelect
+              id="tags"
+              label="Tags"
+              description="Ajoutez des mots-clés pour faciliter la recherche."
+              placeholder="Rechercher un tag"
+              options={(taxonomy?.tags ?? []).map((tag) => ({
+                label: tag.label,
+                value: tag.label,
+              }))}
+              values={currentTags ?? []}
+              onChange={(values) =>
+                setValue('tags', values, { shouldDirty: true })
+              }
+            />
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </CardContent>
+</Card>
 
     {(createMutation.isError || updateMutation.isError) && (
       <p className={`error-text ${styles.flushError}`}>
