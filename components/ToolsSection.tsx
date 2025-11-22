@@ -117,7 +117,7 @@ async function ToolsSection() {
                 <span className="text-subtle">{formatDuration(shared, test.durationMinutes)}</span>
                 <Link
                   className="ph-header__link"
-                  href={`/catalogue/${test.slug}`}
+                  href={{ pathname: '/catalogue/[slug]', params: { slug: test.slug } }}
                   aria-label={t('ctas.viewSheet', { testName: test.name })}
                 >
                   {t('ctas.viewSheetLabel')}

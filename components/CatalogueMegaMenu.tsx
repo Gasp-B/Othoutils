@@ -92,7 +92,7 @@ function CatalogueMegaMenu({ domains }: Props) {
               {domains.map((domain) => (
                 <li key={domain.id}>
                   <Link
-                    href={`/catalogue/${domain.slug}`}
+                    href={{ pathname: '/catalogue/[slug]', params: { slug: domain.slug } }}
                     className={`ph-header__mega-domain ${
                       domain.id === activeDomain?.id ? 'is-active' : ''
                     }`}
@@ -117,16 +117,23 @@ function CatalogueMegaMenu({ domains }: Props) {
               {activeDomain?.label ?? t('tagsLabel')}
             </p>
             <div className="ph-header__mega-tag-grid">
-              {(activeDomain?.tags ?? []).map((tag) => (
-                <Link
-                  key={`${activeDomain?.id ?? 'domain'}-${tag.id}`}
-                  href={`/catalogue/${activeDomain?.slug}/${tag.slug}`}
-                  className="ph-header__mega-tag"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {tag.label}
-                </Link>
-              ))}
+              {(activeDomain?.tags ?? []).map((tag) => {
+                if (!activeDomain) return null;
+
+                return (
+                  <Link
+                    key={`${activeDomain.id}-${tag.id}`}
+                    href={{
+                      pathname: '/catalogue/[slug]/[tag]',
+                      params: { slug: activeDomain.slug, tag: tag.slug },
+                    }}
+                    className="ph-header__mega-tag"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {tag.label}
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
