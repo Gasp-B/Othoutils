@@ -46,7 +46,7 @@ export default async function ManageTestsPage({ params }: ManagePageProps) {
         <p className={`text-subtle ${styles.pageLead}`}>{t('pageLead')}</p>
       </div>
 
-      <TestForm />
+      <TestForm locale={locale as Locale} />
     </main>
   );
 }

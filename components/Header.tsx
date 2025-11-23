@@ -22,7 +22,7 @@ function Header() {
 
     async function loadCatalogue() {
       try {
-        const res = await fetch('/api/catalogue', {
+        const res = await fetch(`/api/catalogue?locale=${locale}`, {
           method: 'GET',
           cache: 'no-store',
         });
@@ -54,7 +54,7 @@ function Header() {
     return () => {
       cancelled = true;
     };
-  }, [navErrorMessage]);
+  }, [locale, navErrorMessage]);
 
   const switchLocale = (nextLocale: 'fr' | 'en') => {
     if (nextLocale === locale) return;

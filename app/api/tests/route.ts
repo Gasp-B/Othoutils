@@ -1,10 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { defaultLocale, locales, type Locale } from '@/i18n/routing';
 import { createTestWithRelations, updateTestWithRelations } from '@/lib/tests/mutations';
 import { getTestsWithMetadata } from '@/lib/tests/queries';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const tests = await getTestsWithMetadata();
+    const { searchParams } = new URL(request.url);
+    const requestedLocale = (searchParams.get('locale') as Locale | null) ?? defaultLocale;
+    const locale = locales.includes(requestedLocale) ? requestedLocale : defaultLocale;
+    const tests = await getTestsWithMetadata(locale);
 
     return NextResponse.json(
       { tests },

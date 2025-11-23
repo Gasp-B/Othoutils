@@ -1,10 +1,15 @@
 // app/api/catalogue/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { defaultLocale, locales, type Locale } from '@/i18n/routing';
 import { getCatalogueTaxonomy } from '@/lib/navigation/catalogue';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const domains = await getCatalogueTaxonomy();
+    const { searchParams } = new URL(request.url);
+    const requestedLocale = (searchParams.get('locale') as Locale | null) ?? defaultLocale;
+    const locale = locales.includes(requestedLocale) ? requestedLocale : defaultLocale;
+
+    const domains = await getCatalogueTaxonomy(locale);
 
     return NextResponse.json(
       { domains },

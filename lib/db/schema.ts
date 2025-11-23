@@ -1,4 +1,4 @@
-import { boolean, integer, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, integer, jsonb, pgTable, primaryKey, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const toolsCatalog = pgTable('tools_catalog', {
@@ -64,10 +64,24 @@ export const sectionSubsections = pgTable(
 
 export const tags = pgTable('tags', {
   id: uuid('id').defaultRandom().primaryKey(),
-  label: text('label').notNull().unique(),
   colorLabel: text('color_label'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const tagsTranslations = pgTable(
+  'tags_translations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    tagId: uuid('tag_id')
+      .notNull()
+      .references(() => tags.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    label: text('label').notNull(),
+  },
+  (table) => ({
+    localeConstraint: uniqueIndex('tags_translations_tag_id_locale_key').on(table.tagId, table.locale),
+  }),
+);
 
 export const subsectionTags = pgTable(
   'subsection_tags',
@@ -86,20 +100,11 @@ export const subsectionTags = pgTable(
 
 export const tests = pgTable('tests', {
   id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  slug: text('slug').notNull().unique(),
-  shortDescription: text('short_description'),
-  objective: text('objective'),
   ageMinMonths: integer('age_min_months'),
   ageMaxMonths: integer('age_max_months'),
-  population: text('population'),
   durationMinutes: integer('duration_minutes'),
-  materials: text('materials'),
   isStandardized: boolean('is_standardized').default(false),
-  publisher: text('publisher'),
-  priceRange: text('price_range'),
   buyLink: text('buy_link'),
-  notes: text('notes'),
   bibliography: jsonb('bibliography')
     .notNull()
     .$type<Array<{ label: string; url: string }>>()
@@ -110,11 +115,50 @@ export const tests = pgTable('tests', {
 
 export type TestRecord = typeof tests.$inferSelect;
 
+export const testsTranslations = pgTable(
+  'tests_translations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    testId: uuid('test_id')
+      .notNull()
+      .references(() => tests.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    name: text('name').notNull(),
+    slug: text('slug').notNull(),
+    shortDescription: text('short_description'),
+    objective: text('objective'),
+    population: text('population'),
+    materials: text('materials'),
+    publisher: text('publisher'),
+    priceRange: text('price_range'),
+    notes: text('notes'),
+  },
+  (table) => ({
+    localeConstraint: uniqueIndex('tests_translations_test_id_locale_key').on(table.testId, table.locale),
+    slugLocaleConstraint: uniqueIndex('tests_translations_slug_locale_key').on(table.slug, table.locale),
+  }),
+);
+
 export const domains = pgTable('domains', {
   id: uuid('id').defaultRandom().primaryKey(),
-  label: text('label').notNull().unique(),
-  slug: text('slug').notNull().unique(),
 });
+
+export const domainsTranslations = pgTable(
+  'domains_translations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    domainId: uuid('domain_id')
+      .notNull()
+      .references(() => domains.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    label: text('label').notNull(),
+    slug: text('slug').notNull(),
+  },
+  (table) => ({
+    localeConstraint: uniqueIndex('domains_translations_domain_id_locale_key').on(table.domainId, table.locale),
+    slugLocaleConstraint: uniqueIndex('domains_translations_slug_locale_key').on(table.slug, table.locale),
+  }),
+);
 
 export const testDomains = pgTable(
   'test_domains',

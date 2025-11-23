@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unnecessary-type-assertion */
-import { and, like, ne } from 'drizzle-orm';
+import { and, eq, like, ne } from 'drizzle-orm';
 
 export function slugify(value: string): string {
   return value
@@ -18,6 +18,8 @@ type GenerateUniqueSlugParams = {
   idColumn?: any;
   excludeId?: string;
   reserved?: Set<string>;
+  localeColumn?: any;
+  locale?: string;
 };
 
 export async function generateUniqueSlug({
@@ -28,12 +30,16 @@ export async function generateUniqueSlug({
   idColumn,
   excludeId,
   reserved = new Set<string>(),
+  localeColumn,
+  locale,
 }: GenerateUniqueSlugParams): Promise<string> {
   const baseSlug = slugify(name) || 'item';
   const pattern = `${baseSlug}%`;
 
-  const baseCondition = like(slugColumn, pattern);
-  const condition = excludeId && idColumn ? and(baseCondition, ne(idColumn, excludeId)) : baseCondition;
+  const localeCondition = localeColumn && locale ? eq(localeColumn, locale) : null;
+  const baseCondition = localeCondition ? and(like(slugColumn, pattern), localeCondition) : like(slugColumn, pattern);
+  const condition =
+    excludeId && idColumn ? and(baseCondition, ne(idColumn, excludeId)) : baseCondition;
 
   const existingRows = await db
     .select({ slug: slugColumn })

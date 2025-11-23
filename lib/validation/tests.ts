@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+import { defaultLocale, locales } from '@/i18n/routing';
+
+const localeEnum = z.enum(locales);
+
 const bibliographySchema = z
   .array(
     z.object({
@@ -38,6 +42,7 @@ export const testsResponseSchema = z.object({
 
 export type TestDto = z.infer<typeof testSchema>;
 export const testInputSchema = z.object({
+  locale: localeEnum.default(defaultLocale),
   name: z.string().min(1),
   shortDescription: z.string().nullable().optional(),
   objective: z.string().nullable().optional(),
@@ -82,12 +87,14 @@ export type TaxonomyResponse = z.infer<typeof taxonomyResponseSchema>;
 
 export const taxonomyMutationSchema = z.object({
   type: z.enum(['domain', 'tag']),
+  locale: localeEnum.default(defaultLocale),
   value: z.string().trim().min(1, { message: 'La valeur fournie est vide.' }),
 });
 
 export const taxonomyDeletionSchema = z.object({
   type: z.enum(['domain', 'tag']),
   id: z.string().uuid(),
+  locale: localeEnum.default(defaultLocale),
 });
 
 export type TaxonomyMutationInput = z.infer<typeof taxonomyMutationSchema>;
