@@ -1,4 +1,4 @@
-name: Dump Supabase prod schema
+name: Dump Supabase prod schema (Supabase CLI)
 
 on:
   workflow_dispatch:
@@ -11,28 +11,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Add PostgreSQL APT repository (PGDG)
+      - name: Install Supabase CLI from GitHub Releases
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget gnupg2
-          wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/postgresql.gpg
-          echo "deb http://apt.postgresql.org/pub/repos/apt/ noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
-          sudo apt-get update
-
-      - name: Install PostgreSQL 17 client
-        run: |
-          sudo apt-get install -y postgresql-client-17
-          pg_dump --version
+          mkdir -p $HOME/bin
+          cd $HOME/bin
+          # Télécharge le binaire Linux amd64 depuis les releases GitHub
+          curl -L https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o supabase.tar.gz
+          tar -xzf supabase.tar.gz
+          rm supabase.tar.gz
+          chmod +x supabase
+          echo "$HOME/bin" >> $GITHUB_PATH
+          supabase --version
 
       - name: Dump Supabase schema (schema-only)
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           mkdir -p docs
-          pg_dump "$SUPABASE_DB_URL" \
+          supabase db dump \
+            --db-url "$SUPABASE_DB_URL" \
             --schema-only \
-            --no-owner \
-            --no-privileges \
             > docs/remote_schema_supabase_prod.sql
 
       - name: Upload schema as artifact
