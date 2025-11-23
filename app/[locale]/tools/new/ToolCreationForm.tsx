@@ -5,16 +5,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
+import { useTranslations } from 'next-intl';
 import { createToolSchema } from '@/lib/validation/tools';
 import styles from './tool-creation-form.module.css';
-
-const formSchema = z.object({
-  name: z.string().min(1, 'Le nom est requis'),
-  category: z.string().min(1, 'La catégorie est requise'),
-  type: z.string().min(1, 'Le type est requis'),
-  tags: z.string().min(1, 'Ajoutez au moins un tag, séparés par des virgules'),
-  source: z.string().url('La source doit être une URL valide'),
-});
 
 const defaultValues = {
   name: '',
@@ -24,8 +17,6 @@ const defaultValues = {
   source: '',
 };
 
-type FormValues = z.infer<typeof formSchema>;
-
 type CreateToolPayload = z.infer<typeof createToolSchema>;
 
 type ApiResponse = {
@@ -33,7 +24,19 @@ type ApiResponse = {
   error?: string;
 };
 
-async function submitTool(payload: CreateToolPayload) {
+const createFormSchema = (t: ReturnType<typeof useTranslations>) =>
+  z.object({
+    name: z.string().min(1, t('validation.name.required')),
+    category: z.string().min(1, t('validation.category.required')),
+    type: z.string().min(1, t('validation.type.required')),
+    tags: z.string().min(1, t('validation.tags.required')),
+    source: z.string().url(t('validation.source.url')),
+  });
+
+type FormSchema = ReturnType<typeof createFormSchema>;
+type FormValues = z.infer<FormSchema>;
+
+async function submitTool(payload: CreateToolPayload, fallbackMessage: string) {
   const response = await fetch('/api/tools', {
     method: 'POST',
     headers: {
@@ -44,7 +47,7 @@ async function submitTool(payload: CreateToolPayload) {
 
   if (!response.ok) {
     const data = (await response.json().catch(() => ({}))) as ApiResponse;
-    throw new Error(data.error ?? "Impossible d'enregistrer l'outil");
+    throw new Error(data.error ?? fallbackMessage);
   }
 
   return (await response.json()) as ApiResponse;
@@ -52,6 +55,10 @@ async function submitTool(payload: CreateToolPayload) {
 
 function ToolCreationForm() {
   const queryClient = useQueryClient();
+  const t = useTranslations('ToolForm');
+
+  const formSchema = useMemo<FormSchema>(() => createFormSchema(t), [t]);
+
   const {
     register,
     handleSubmit,
@@ -63,7 +70,7 @@ function ToolCreationForm() {
   });
 
   const mutation = useMutation({
-    mutationFn: submitTool,
+    mutationFn: (payload: CreateToolPayload) => submitTool(payload, t('validation.fallback')),
     onSuccess: () => {
       reset(defaultValues);
       void queryClient.invalidateQueries({ queryKey: ['tools'] });
@@ -72,10 +79,10 @@ function ToolCreationForm() {
 
   const [submitLabel, submitDisabled] = useMemo(
     () => [
-      mutation.isPending ? 'Enregistrement…' : 'Créer la fiche',
+      mutation.isPending ? t('submit.pending') : t('submit.idle'),
       mutation.isPending,
     ],
-    [mutation.isPending],
+    [mutation.isPending, t],
   );
 
   const onSubmit = handleSubmit((values) => {
@@ -97,72 +104,53 @@ function ToolCreationForm() {
     <form className={`glass panel ${styles.form}`} onSubmit={(event) => void onSubmit(event)}>
       <div className={styles.fieldGroup}>
         <label className="text-subtle" htmlFor="name">
-          Nom de l'outil
+          {t('fields.name.label')}
         </label>
-        <input
-          id="name"
-          className="input"
-          placeholder="Exemple : Grille de repérage OMF"
-          {...register('name')}
-        />
+        <input id="name" className="input" placeholder={t('fields.name.placeholder')} {...register('name')} />
         {errors.name && <p className="error-text">{errors.name.message}</p>}
       </div>
 
       <div className={styles.fieldGroup}>
         <label className="text-subtle" htmlFor="category">
-          Catégorie
+          {t('fields.category.label')}
         </label>
-        <input
-          id="category"
-          className="input"
-          placeholder="Bilan, Diagnostic, OMF…"
-          {...register('category')}
-        />
+        <input id="category" className="input" placeholder={t('fields.category.placeholder')} {...register('category')} />
         {errors.category && <p className="error-text">{errors.category.message}</p>}
       </div>
 
       <div className={styles.fieldGroup}>
         <label className="text-subtle" htmlFor="type">
-          Type
+          {t('fields.type.label')}
         </label>
-        <input id="type" className="input" placeholder="Questionnaire, batterie, suivi…" {...register('type')} />
+        <input id="type" className="input" placeholder={t('fields.type.placeholder')} {...register('type')} />
         {errors.type && <p className="error-text">{errors.type.message}</p>}
       </div>
 
       <div className={styles.fieldGroup}>
         <label className="text-subtle" htmlFor="tags">
-          Tags
+          {t('fields.tags.label')}
         </label>
-        <input
-          id="tags"
-          className="input"
-          placeholder="dysarthrie, accompagnement, cognition"
-          {...register('tags')}
-        />
-        <p className={`text-subtle ${styles.helperTight}`}>
-          Séparez les tags par des virgules. Ils seront utilisés pour filtrer le catalogue.
-        </p>
+        <input id="tags" className="input" placeholder={t('fields.tags.placeholder')} {...register('tags')} />
+        <p className={`text-subtle ${styles.helperTight}`}>{t('helpers.tags')}</p>
         {errors.tags && <p className="error-text">{errors.tags.message}</p>}
       </div>
 
       <div className={styles.fieldGroup}>
         <label className="text-subtle" htmlFor="source">
-          Source
+          {t('fields.source.label')}
         </label>
-        <input id="source" className="input" placeholder="https://…" {...register('source')} />
+        <input id="source" className="input" placeholder={t('fields.source.placeholder')} {...register('source')} />
         {errors.source && <p className="error-text">{errors.source.message}</p>}
       </div>
 
       {mutation.isError && (
         <p className={`error-text ${styles.errorInline}`}>
-          {mutation.error instanceof Error ? mutation.error.message : "Une erreur est survenue."}
+          {mutation.error instanceof Error ? mutation.error.message : t('feedback.error')}
         </p>
       )}
 
       {mutation.isSuccess && !mutation.isError && (
-        <p className={styles.successMessage}>
-          La fiche a été créée. Elle apparaîtra dans le catalogue sous l'étiquette « Communauté ».
-        </p>
+        <p className={styles.successMessage}>{t('feedback.success')}</p>
       )}
 
       <button className="primary-btn" type="submit" disabled={submitDisabled} aria-busy={submitDisabled}>

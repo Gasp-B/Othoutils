@@ -1,34 +1,41 @@
-import Link from 'next/link';
+import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/navigation';
 import ToolCreationForm from './ToolCreationForm';
 import styles from './new-tool-page.module.css';
 
-export const metadata = {
-  title: 'Ajouter un outil | Othoutils',
-  description: "Créez une fiche d'outil pour enrichir le catalogue.",
-};
+type PageParams = { params: { locale: string } };
 
-function NewToolPage() {
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
+  const t = await getTranslations({ locale: params.locale, namespace: 'ToolsNew' });
+
+  return {
+    title: t('metadata.title'),
+    description: t('metadata.description'),
+  };
+}
+
+async function NewToolPage({ params }: PageParams) {
+  const t = await getTranslations({ locale: params.locale, namespace: 'ToolsNew' });
+
   return (
     <div className={`container section-shell ${styles.page}`}>
       <div className="section-title">
         <span />
-        <p className={styles.sectionLabel}>Créer une fiche outil</p>
+        <p className={styles.sectionLabel}>{t('sectionLabel')}</p>
       </div>
 
       <div className={`glass panel ${styles.introPanel}`}>
-        <p className={styles.introTitle}>
-          Renseignez les informations clés pour qu\'une nouvelle fiche apparaisse dans le catalogue.
-        </p>
+        <p className={styles.introTitle}>{t('intro.title')}</p>
+        <p className={`text-subtle ${styles.introText}`}>{t('intro.required')}</p>
         <p className={`text-subtle ${styles.introText}`}>
-          Les champs Nom, Catégorie, Type, Tags et Source sont obligatoires. Les fiches créées sont signalées comme
-          contributions communautaires et apparaîtront dans la liste principale.
-        </p>
-        <p className={`text-subtle ${styles.introText}`}>
-          Besoin de vérifier le rendu ? Consultez le{' '}
-          <Link href="/#catalogue" className="top-banner__link">
-            catalogue
-          </Link>{' '}
-          après validation.
+          {t.rich('intro.preview', {
+            catalogLink: (chunks) => (
+              <Link href="/#catalogue" className="top-banner__link">
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       </div>
 
