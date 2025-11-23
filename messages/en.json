@@ -528,5 +528,73 @@
         "deleted": "Item removed. Lists will refresh."
       }
     }
+  },
+  "ToolsNew": {
+    "metadata": {
+      "title": "Add a tool | Othoutils",
+      "description": "Create a tool sheet to enrich the catalog."
+    },
+    "sectionLabel": "Create a tool sheet",
+    "intro": {
+      "title": "Fill in the key details so a new sheet appears in the catalog.",
+      "required": "The Name, Category, Type, Tags, and Source fields are required. Sheets created here are flagged as community contributions and will appear in the main list.",
+      "preview": "Need to review the layout? Check the <catalogLink>catalog</catalogLink> after publishing."
+    },
+    "links": {
+      "catalogLabel": "catalog"
+    }
+  },
+  "ToolForm": {
+    "fields": {
+      "name": {
+        "label": "Tool name",
+        "placeholder": "e.g., OMF screening grid"
+      },
+      "category": {
+        "label": "Category",
+        "placeholder": "Assessment, diagnosis, OMF…"
+      },
+      "type": {
+        "label": "Type",
+        "placeholder": "Questionnaire, battery, follow-up…"
+      },
+      "tags": {
+        "label": "Tags",
+        "placeholder": "dysarthria, support, cognition"
+      },
+      "source": {
+        "label": "Source",
+        "placeholder": "https://…"
+      }
+    },
+    "helpers": {
+      "tags": "Separate tags with commas. They will be used to filter the catalog."
+    },
+    "validation": {
+      "name": {
+        "required": "Name is required"
+      },
+      "category": {
+        "required": "Category is required"
+      },
+      "type": {
+        "required": "Type is required"
+      },
+      "tags": {
+        "required": "Add at least one tag, separated by commas"
+      },
+      "source": {
+        "url": "Source must be a valid URL"
+      },
+      "fallback": "Unable to save the tool"
+    },
+    "submit": {
+      "idle": "Create sheet",
+      "pending": "Saving…"
+    },
+    "feedback": {
+      "success": "The sheet has been created. It will appear in the catalog under the “Community” label.",
+      "error": "An error occurred."
+    }
   }
 }
