@@ -17,7 +17,8 @@ type CatalogRow = {
   links: Array<{ label: string; url: string }>;
   notes: string | null;
   targetPopulation: string | null;
-  status: string;
+  status: ToolStatus;
+  statusLabel?: string;
   createdAt: Date | string;
   type: string | null;
   source: string | null;
@@ -33,21 +34,31 @@ type CommunityRow = {
   createdAt: Date | string;
 };
 
+function normalizeLocale(rawLocale: string | null): Locale | null {
+  if (!rawLocale) {
+    return null;
+  }
+
+  const normalized = rawLocale.split(',')[0]?.split('-')[0]?.trim();
+
+  if (normalized && locales.includes(normalized as Locale)) {
+    return normalized as Locale;
+  }
+
+  return null;
+}
+
 function resolveLocale(request: NextRequest): Locale {
+  const localeFromQuery = normalizeLocale(request.nextUrl.searchParams.get('locale'));
+  if (localeFromQuery) {
+    return localeFromQuery;
+  }
+
   const requestedLocale =
     request.headers.get('x-orthoutil-locale') ?? request.headers.get('accept-language');
+  const localeFromHeader = normalizeLocale(requestedLocale);
 
-  if (!requestedLocale) {
-    return defaultLocale;
-  }
-
-  const normalizedLocale = requestedLocale.split(',')[0]?.split('-')[0]?.trim();
-
-  if (normalizedLocale && locales.includes(normalizedLocale as Locale)) {
-    return normalizedLocale as Locale;
-  }
-
-  return defaultLocale;
+  return localeFromHeader ?? defaultLocale;
 }
 
 async function getToolValidationResources(locale: Locale) {
@@ -64,21 +75,28 @@ async function getToolValidationResources(locale: Locale) {
   return { schema, fallbackError: t('validation.fallback') };
 }
 
-const statusTranslations: Record<string, ToolStatus> = {
-  Validé: 'validated',
-  validated: 'validated',
-  'En cours de revue': 'review',
-  review: 'review',
-  Communauté: 'community',
-  community: 'community',
-};
+function resolveStatusKey(value: string | null): ToolStatus {
+  const normalized = value?.toLowerCase().trim();
 
-function normalizeStatus(status: string | null | undefined): ToolStatus {
-  return statusTranslations[status ?? 'validated'] ?? 'validated';
+  if (normalized === 'validé' || normalized === 'validated') {
+    return 'validated';
+  }
+
+  if (normalized === 'en cours de revue' || normalized === 'under review') {
+    return 'review';
+  }
+
+  if (normalized === 'communauté' || normalized === 'community') {
+    return 'community';
+  }
+
+  return 'review';
 }
 
 export async function GET(request: NextRequest) {
   const locale = resolveLocale(request);
+  const toolCardTranslations = await getTranslations({ locale, namespace: 'ToolCard' });
+  const apiTranslations = await getTranslations({ locale, namespace: 'ApiTools' });
 
   try {
     const localizedCatalog = alias(toolsCatalogTranslations, 'localized_catalog');
@@ -139,6 +157,7 @@ export async function GET(request: NextRequest) {
 
           if ('name' in tool) {
             const community = tool as CommunityRow;
+            const status = 'community' as const;
             return {
               id: community.id,
               title: community.name,
@@ -148,8 +167,9 @@ export async function GET(request: NextRequest) {
               description: null,
               links: [],
               notes: null,
-              targetPopulation: null,
-              status: 'community' as ToolStatus,
+              targetPopulation: toolCardTranslations('fallback.population'),
+              status,
+              statusLabel: toolCardTranslations(`status.${status}`),
               createdAt,
               type: community.type,
               source: community.source,
@@ -157,11 +177,8 @@ export async function GET(request: NextRequest) {
           }
 
           const catalog = tool as CatalogRow;
-          const normalizedTargetPopulation =
-            catalog.targetPopulation && catalog.targetPopulation.length > 0
-              ? catalog.targetPopulation
-              : null;
-
+          const hasTargetPopulation = Boolean(catalog.targetPopulation && catalog.targetPopulation.length > 0);
+          const status = resolveStatusKey(catalog.status);
           return {
             id: catalog.id,
             title: catalog.title,
@@ -171,8 +188,11 @@ export async function GET(request: NextRequest) {
             description: catalog.description ?? null,
             links: catalog.links ?? [],
             notes: catalog.notes ?? null,
-            targetPopulation: normalizedTargetPopulation,
-            status: normalizeStatus(catalog.status),
+            targetPopulation: hasTargetPopulation
+              ? catalog.targetPopulation
+              : toolCardTranslations('fallback.population'),
+            status,
+            statusLabel: toolCardTranslations(`status.${status}`),
             createdAt,
             type: null,
             source: catalog.links?.[0]?.url ?? null,
@@ -189,14 +209,15 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Failed to fetch tools from Supabase', error);
-    const message = error instanceof Error ? error.message : 'Impossible de récupérer les outils';
-    return NextResponse.json({ error: message }, { status: 500 });
+    const fallbackMessage = apiTranslations('errors.fetch');
+    return NextResponse.json({ error: fallbackMessage }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   const locale = resolveLocale(request);
   const { schema, fallbackError } = await getToolValidationResources(locale);
+  const toolCardTranslations = await getTranslations({ locale, namespace: 'ToolCard' });
 
   try {
     const json = await request.json();
@@ -265,8 +286,9 @@ export async function POST(request: NextRequest) {
       description: null,
       links: [],
       notes: null,
-      targetPopulation: null,
-      status: 'community' as ToolStatus,
+      targetPopulation: toolCardTranslations('fallback.population'),
+      status: 'community' as const,
+      statusLabel: toolCardTranslations('status.community'),
       createdAt:
         inserted.createdAt instanceof Date
           ? inserted.createdAt.toISOString()
