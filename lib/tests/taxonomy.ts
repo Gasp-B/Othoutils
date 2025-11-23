@@ -124,7 +124,7 @@ export async function deleteDomain(id: string, locale: Locale = defaultLocale) {
 
   const [translation] = await db
     .select({
-      label: sql<string>`COALESCE(${localizedDomain.label}, ${fallbackDomain.label})`,
+      label: sql<string>`COALESCE(${localizedDomain.label}, ${fallbackDomain.label}, '')`,
     })
     .from(domains)
     .leftJoin(localizedDomain, and(eq(localizedDomain.domainId, domains.id), eq(localizedDomain.locale, locale)))
@@ -154,7 +154,7 @@ export async function deleteTag(id: string, locale: Locale = defaultLocale) {
 
   const [translation] = await db
     .select({
-      label: sql<string>`COALESCE(${localizedTag.label}, ${fallbackTag.label})`,
+      label: sql<string>`COALESCE(${localizedTag.label}, ${fallbackTag.label}, '')`,
     })
     .from(tags)
     .leftJoin(localizedTag, and(eq(localizedTag.tagId, tags.id), eq(localizedTag.locale, locale)))

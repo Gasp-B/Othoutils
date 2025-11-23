@@ -22,9 +22,9 @@ export async function getCatalogueTaxonomy(locale: Locale = defaultLocale): Prom
   const localizedTag = alias(tagsTranslations, 'localized_tag');
   const fallbackTag = alias(tagsTranslations, 'fallback_tag');
 
-  const domainLabelExpression = sql<string>`COALESCE(${localizedDomain.label}, ${fallbackDomain.label})`;
-  const domainSlugExpression = sql<string>`COALESCE(${localizedDomain.slug}, ${fallbackDomain.slug})`;
-  const tagLabelExpression = sql<string>`COALESCE(${localizedTag.label}, ${fallbackTag.label})`;
+  const domainLabelExpression = sql<string>`COALESCE(${localizedDomain.label}, ${fallbackDomain.label}, '')`;
+  const domainSlugExpression = sql<string>`COALESCE(${localizedDomain.slug}, ${fallbackDomain.slug}, '')`;
+  const tagLabelExpression = sql<string>`COALESCE(${localizedTag.label}, ${fallbackTag.label}, '')`;
 
   const [domainRows, tagRows, domainTagRelations] = await Promise.all([
     db
