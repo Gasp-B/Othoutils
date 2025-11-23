@@ -538,7 +538,7 @@
     "intro": {
       "title": "Fill in the key details so a new sheet appears in the catalog.",
       "required": "The Name, Category, Type, Tags, and Source fields are required. Sheets created here are flagged as community contributions and will appear in the main list.",
-      "preview": "Need to review the layout? Check the {catalogLink} after publishing."
+      "preview": "Need to review the layout? Check the <catalogLink>catalog</catalogLink> after publishing."
     },
     "links": {
       "catalogLabel": "catalog"

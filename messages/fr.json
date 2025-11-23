@@ -597,7 +597,7 @@
         "intro": {
             "title": "Renseignez les informations clés pour qu'une nouvelle fiche apparaisse dans le catalogue.",
             "required": "Les champs Nom, Catégorie, Type, Tags et Source sont obligatoires. Les fiches créées sont signalées comme contributions communautaires et apparaîtront dans la liste principale.",
-            "preview": "Besoin de vérifier le rendu ? Consultez le {catalogLink} après validation."
+            "preview": "Besoin de vérifier le rendu ? Consultez le <catalogLink>catalogue</catalogLink> après validation."
         },
         "links": {
             "catalogLabel": "catalogue"
