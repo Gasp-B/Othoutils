@@ -14,6 +14,8 @@ END $$;
 -- Drop policies that depend on the status column type to avoid ALTER TYPE errors.
 DROP POLICY IF EXISTS tools_catalog_select_by_role ON public.tools_catalog;
 DROP POLICY IF EXISTS tools_catalog_manage_by_moderators ON public.tools_catalog;
+DROP POLICY IF EXISTS tools_catalog_translations_select_by_role ON public.tools_catalog_translations;
+DROP POLICY IF EXISTS tools_catalog_translations_manage_by_moderators ON public.tools_catalog_translations;
 
 ALTER TABLE public.tools_catalog DROP CONSTRAINT IF EXISTS tools_catalog_status_check;
 ALTER TABLE public.tools_catalog
@@ -55,10 +57,31 @@ FOR ALL
 USING (public.has_moderation_access())
 WITH CHECK (public.has_moderation_access());
 
+CREATE POLICY tools_catalog_translations_select_by_role
+ON public.tools_catalog_translations
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.tools_catalog tc
+    WHERE tc.id = tools_catalog_translations.tool_catalog_id
+      AND public.can_view_status(tc.status)
+  )
+);
+
+CREATE POLICY tools_catalog_translations_manage_by_moderators
+ON public.tools_catalog_translations
+FOR ALL
+USING (public.has_moderation_access())
+WITH CHECK (public.has_moderation_access());
+
 -- tools: convert status to enum and backfill to published for existing rows.
 -- Drop policies that depend on the status column type to avoid ALTER TYPE errors.
 DROP POLICY IF EXISTS tools_select_by_role ON public.tools;
 DROP POLICY IF EXISTS tools_manage_by_moderators ON public.tools;
+DROP POLICY IF EXISTS tools_translations_select_by_role ON public.tools_translations;
+DROP POLICY IF EXISTS tools_translations_manage_by_moderators ON public.tools_translations;
 
 ALTER TABLE public.tools DROP CONSTRAINT IF EXISTS tools_status_check;
 ALTER TABLE public.tools
@@ -89,10 +112,31 @@ FOR ALL
 USING (public.has_moderation_access())
 WITH CHECK (public.has_moderation_access());
 
+CREATE POLICY tools_translations_select_by_role
+ON public.tools_translations
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.tools t
+    WHERE t.id = tools_translations.tool_id
+      AND public.can_view_status(t.status)
+  )
+);
+
+CREATE POLICY tools_translations_manage_by_moderators
+ON public.tools_translations
+FOR ALL
+USING (public.has_moderation_access())
+WITH CHECK (public.has_moderation_access());
+
 -- tests: convert status to enum and backfill to published for existing rows.
 -- Drop policies that depend on the status column type to avoid ALTER TYPE errors.
 DROP POLICY IF EXISTS tests_select_by_role ON public.tests;
 DROP POLICY IF EXISTS tests_manage_by_moderators ON public.tests;
+DROP POLICY IF EXISTS tests_translations_select_by_role ON public.tests_translations;
+DROP POLICY IF EXISTS tests_translations_manage_by_moderators ON public.tests_translations;
 
 ALTER TABLE public.tests DROP CONSTRAINT IF EXISTS tests_status_check;
 ALTER TABLE public.tests
@@ -119,6 +163,25 @@ USING (public.can_view_status(status));
 
 CREATE POLICY tests_manage_by_moderators
 ON public.tests
+FOR ALL
+USING (public.has_moderation_access())
+WITH CHECK (public.has_moderation_access());
+
+CREATE POLICY tests_translations_select_by_role
+ON public.tests_translations
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.tests t
+    WHERE t.id = tests_translations.test_id
+      AND public.can_view_status(t.status)
+  )
+);
+
+CREATE POLICY tests_translations_manage_by_moderators
+ON public.tests_translations
 FOR ALL
 USING (public.has_moderation_access())
 WITH CHECK (public.has_moderation_access());
