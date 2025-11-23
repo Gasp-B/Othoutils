@@ -1,4 +1,4 @@
-name: Dump Supabase prod schema (Supabase CLI)
+name: Dump Supabase prod schema
 
 on:
   workflow_dispatch:
@@ -11,16 +11,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Supabase CLI from GitHub Releases
+      - name: Install Supabase CLI
         run: |
-          mkdir -p $HOME/bin
-          cd $HOME/bin
-          # Télécharge le binaire Linux amd64 depuis les releases GitHub
-          curl -L https://github.com/supabase/cli/releases/latest/download/supabase_linux_amd64.tar.gz -o supabase.tar.gz
-          tar -xzf supabase.tar.gz
-          rm supabase.tar.gz
-          chmod +x supabase
-          echo "$HOME/bin" >> $GITHUB_PATH
+          curl -fsSL https://get.supabase.com/cli | sh
+          echo "$HOME/.supabase/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.supabase/bin:$PATH"
           supabase --version
 
       - name: Dump Supabase schema (schema-only)
