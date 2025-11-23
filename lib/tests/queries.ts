@@ -1,4 +1,5 @@
-import { alias, and, eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { defaultLocale, type Locale } from '@/i18n/routing';
 import { getDb } from '@/lib/db/client';
 import {
