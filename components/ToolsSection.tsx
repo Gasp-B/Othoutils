@@ -1,5 +1,6 @@
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
+import { type Locale } from '@/i18n/routing';
 import { getTestsWithMetadata } from '@/lib/tests/queries';
 import type { TestDto } from '@/lib/validation/tests';
 import styles from './tools-section.module.css';
@@ -35,12 +36,13 @@ function formatDuration(translateShared: Awaited<ReturnType<typeof getTranslatio
 async function ToolsSection() {
   const t = await getTranslations('Tools');
   const shared = await getTranslations('Shared');
+  const locale = (await getLocale()) as Locale;
 
   let tests: TestDto[] = [];
   let loadError: string | null = null;
 
   try {
-    tests = await getTestsWithMetadata();
+    tests = await getTestsWithMetadata(locale);
   } catch (error) {
     console.error('Erreur lors du chargement du catalogue des tests', error);
     loadError = t('errors.load');

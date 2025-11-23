@@ -57,28 +57,45 @@ ALTER TABLE tools ENABLE ROW LEVEL SECURITY;
 -- Test catalog domain.
 CREATE TABLE tests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  slug text UNIQUE NOT NULL,
-  short_description text,
-  objective text,
   age_min_months int,
   age_max_months int,
-  population text,
   duration_minutes int,
-  materials text,
   is_standardized boolean DEFAULT false,
-  publisher text,
-  price_range text,
   buy_link text,
-  notes text,
+  bibliography jsonb NOT NULL DEFAULT '[]'::jsonb,
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
   updated_at timestamptz NOT NULL DEFAULT timezone('utc', now())
 );
 
-CREATE TABLE domains (
+CREATE TABLE tests_translations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  label text NOT NULL UNIQUE,
-  slug text UNIQUE NOT NULL
+  test_id uuid NOT NULL REFERENCES tests(id) ON DELETE CASCADE,
+  locale text NOT NULL,
+  name text NOT NULL,
+  slug text NOT NULL,
+  short_description text,
+  objective text,
+  population text,
+  materials text,
+  publisher text,
+  price_range text,
+  notes text,
+  UNIQUE (test_id, locale),
+  UNIQUE (slug, locale)
+);
+
+CREATE TABLE domains (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid()
+);
+
+CREATE TABLE domains_translations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  domain_id uuid NOT NULL REFERENCES domains(id) ON DELETE CASCADE,
+  locale text NOT NULL,
+  label text NOT NULL,
+  slug text NOT NULL,
+  UNIQUE (domain_id, locale),
+  UNIQUE (slug, locale)
 );
 
 CREATE TABLE test_domains (
@@ -89,9 +106,16 @@ CREATE TABLE test_domains (
 
 CREATE TABLE tags (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  label text NOT NULL UNIQUE,
   color_label text,
   created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
+);
+
+CREATE TABLE tags_translations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  tag_id uuid NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  locale text NOT NULL,
+  label text NOT NULL,
+  UNIQUE (tag_id, locale)
 );
 
 CREATE TABLE test_tags (
@@ -101,7 +125,10 @@ CREATE TABLE test_tags (
 );
 
 ALTER TABLE tests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tests_translations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE domains ENABLE ROW LEVEL SECURITY;
+ALTER TABLE domains_translations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE test_domains ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tags_translations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE test_tags ENABLE ROW LEVEL SECURITY;

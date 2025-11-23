@@ -1,6 +1,16 @@
-import { asc, eq, sql } from 'drizzle-orm';
+import { alias, and, eq, sql } from 'drizzle-orm';
+import { defaultLocale, type Locale } from '@/i18n/routing';
 import { getDb } from '@/lib/db/client';
-import { domains, tags, testDomains, testTags, tests } from '@/lib/db/schema';
+import {
+  domains,
+  domainsTranslations,
+  tags,
+  tagsTranslations,
+  testDomains,
+  testTags,
+  tests,
+  testsTranslations,
+} from '@/lib/db/schema';
 import { testsResponseSchema, type TestDto } from '@/lib/validation/tests';
 
 function toIsoString(value: Date | string | null) {
@@ -15,43 +25,78 @@ function toIsoString(value: Date | string | null) {
   return new Date().toISOString();
 }
 
-export async function getTestsWithMetadata(): Promise<TestDto[]> {
+export async function getTestsWithMetadata(locale: Locale = defaultLocale): Promise<TestDto[]> {
+  const localizedTest = alias(testsTranslations, 'localized_test');
+  const fallbackTest = alias(testsTranslations, 'fallback_test');
+  const localizedDomain = alias(domainsTranslations, 'localized_domain');
+  const fallbackDomain = alias(domainsTranslations, 'fallback_domain');
+  const localizedTag = alias(tagsTranslations, 'localized_tag');
+  const fallbackTag = alias(tagsTranslations, 'fallback_tag');
+
+  const nameExpression = sql<string>`COALESCE(MAX(${localizedTest.name}), MAX(${fallbackTest.name}))`;
+  const slugExpression = sql<string>`COALESCE(MAX(${localizedTest.slug}), MAX(${fallbackTest.slug}))`;
+  const shortDescriptionExpression = sql<string | null>`COALESCE(MAX(${localizedTest.shortDescription}), MAX(${fallbackTest.shortDescription}))`;
+  const objectiveExpression = sql<string | null>`COALESCE(MAX(${localizedTest.objective}), MAX(${fallbackTest.objective}))`;
+  const populationExpression = sql<string | null>`COALESCE(MAX(${localizedTest.population}), MAX(${fallbackTest.population}))`;
+  const materialsExpression = sql<string | null>`COALESCE(MAX(${localizedTest.materials}), MAX(${fallbackTest.materials}))`;
+  const publisherExpression = sql<string | null>`COALESCE(MAX(${localizedTest.publisher}), MAX(${fallbackTest.publisher}))`;
+  const priceRangeExpression = sql<string | null>`COALESCE(MAX(${localizedTest.priceRange}), MAX(${fallbackTest.priceRange}))`;
+  const notesExpression = sql<string | null>`COALESCE(MAX(${localizedTest.notes}), MAX(${fallbackTest.notes}))`;
+  const domainLabelExpression = sql<string>`COALESCE(${localizedDomain.label}, ${fallbackDomain.label})`;
+  const tagLabelExpression = sql<string>`COALESCE(${localizedTag.label}, ${fallbackTag.label})`;
+
   const rows = await getDb()
     .select({
       id: tests.id,
-      name: tests.name,
-      slug: tests.slug,
-      shortDescription: tests.shortDescription,
-      objective: tests.objective,
+      name: nameExpression,
+      slug: slugExpression,
+      shortDescription: shortDescriptionExpression,
+      objective: objectiveExpression,
       ageMinMonths: tests.ageMinMonths,
       ageMaxMonths: tests.ageMaxMonths,
-      population: tests.population,
+      population: populationExpression,
       durationMinutes: tests.durationMinutes,
-      materials: tests.materials,
+      materials: materialsExpression,
       isStandardized: tests.isStandardized,
-      publisher: tests.publisher,
-      priceRange: tests.priceRange,
+      publisher: publisherExpression,
+      priceRange: priceRangeExpression,
       buyLink: tests.buyLink,
-      notes: tests.notes,
+      notes: notesExpression,
       bibliography: tests.bibliography,
       createdAt: tests.createdAt,
       updatedAt: tests.updatedAt,
-      domains: sql<string[]>`COALESCE(array_agg(DISTINCT ${domains.label}) FILTER (WHERE ${domains.label} IS NOT NULL), '{}')`,
-      tags: sql<string[]>`COALESCE(array_agg(DISTINCT ${tags.label}) FILTER (WHERE ${tags.label} IS NOT NULL), '{}')`,
+      domains: sql<string[]>`COALESCE(array_agg(DISTINCT ${domainLabelExpression}) FILTER (WHERE ${domainLabelExpression} IS NOT NULL), '{}')`,
+      tags: sql<string[]>`COALESCE(array_agg(DISTINCT ${tagLabelExpression}) FILTER (WHERE ${tagLabelExpression} IS NOT NULL), '{}')`,
     })
     .from(tests)
+    .leftJoin(localizedTest, and(eq(localizedTest.testId, tests.id), eq(localizedTest.locale, locale)))
+    .leftJoin(fallbackTest, and(eq(fallbackTest.testId, tests.id), eq(fallbackTest.locale, defaultLocale)))
     .leftJoin(testDomains, eq(tests.id, testDomains.testId))
     .leftJoin(domains, eq(testDomains.domainId, domains.id))
+    .leftJoin(localizedDomain, and(eq(localizedDomain.domainId, domains.id), eq(localizedDomain.locale, locale)))
+    .leftJoin(fallbackDomain, and(eq(fallbackDomain.domainId, domains.id), eq(fallbackDomain.locale, defaultLocale)))
     .leftJoin(testTags, eq(tests.id, testTags.testId))
     .leftJoin(tags, eq(testTags.tagId, tags.id))
-    .groupBy(tests.id)
-    .orderBy(asc(tests.name));
+    .leftJoin(localizedTag, and(eq(localizedTag.tagId, tags.id), eq(localizedTag.locale, locale)))
+    .leftJoin(fallbackTag, and(eq(fallbackTag.tagId, tags.id), eq(fallbackTag.locale, defaultLocale)))
+    .groupBy(
+      tests.id,
+      tests.ageMinMonths,
+      tests.ageMaxMonths,
+      tests.durationMinutes,
+      tests.isStandardized,
+      tests.buyLink,
+      tests.bibliography,
+      tests.createdAt,
+      tests.updatedAt,
+    )
+    .orderBy(nameExpression);
 
   const parsed = testsResponseSchema.parse({
     tests: rows.map((row) => ({
       ...row,
-      createdAt: toIsoString(row.createdAt ?? null),
-      updatedAt: toIsoString(row.updatedAt ?? null),
+      createdAt: toIsoString((row.createdAt as Date | string | null) ?? null),
+      updatedAt: toIsoString((row.updatedAt as Date | string | null) ?? null),
       domains: row.domains ?? [],
       tags: row.tags ?? [],
       bibliography: row.bibliography ?? [],
@@ -61,44 +106,82 @@ export async function getTestsWithMetadata(): Promise<TestDto[]> {
   return parsed.tests;
 }
 
-export async function getTestWithMetadata(id: string): Promise<TestDto | null> {
+export async function getTestWithMetadata(
+  id: string,
+  locale: Locale = defaultLocale,
+): Promise<TestDto | null> {
+  const localizedTest = alias(testsTranslations, 'localized_test');
+  const fallbackTest = alias(testsTranslations, 'fallback_test');
+  const localizedDomain = alias(domainsTranslations, 'localized_domain');
+  const fallbackDomain = alias(domainsTranslations, 'fallback_domain');
+  const localizedTag = alias(tagsTranslations, 'localized_tag');
+  const fallbackTag = alias(tagsTranslations, 'fallback_tag');
+
+  const nameExpression = sql<string>`COALESCE(MAX(${localizedTest.name}), MAX(${fallbackTest.name}))`;
+  const slugExpression = sql<string>`COALESCE(MAX(${localizedTest.slug}), MAX(${fallbackTest.slug}))`;
+  const shortDescriptionExpression = sql<string | null>`COALESCE(MAX(${localizedTest.shortDescription}), MAX(${fallbackTest.shortDescription}))`;
+  const objectiveExpression = sql<string | null>`COALESCE(MAX(${localizedTest.objective}), MAX(${fallbackTest.objective}))`;
+  const populationExpression = sql<string | null>`COALESCE(MAX(${localizedTest.population}), MAX(${fallbackTest.population}))`;
+  const materialsExpression = sql<string | null>`COALESCE(MAX(${localizedTest.materials}), MAX(${fallbackTest.materials}))`;
+  const publisherExpression = sql<string | null>`COALESCE(MAX(${localizedTest.publisher}), MAX(${fallbackTest.publisher}))`;
+  const priceRangeExpression = sql<string | null>`COALESCE(MAX(${localizedTest.priceRange}), MAX(${fallbackTest.priceRange}))`;
+  const notesExpression = sql<string | null>`COALESCE(MAX(${localizedTest.notes}), MAX(${fallbackTest.notes}))`;
+  const domainLabelExpression = sql<string>`COALESCE(${localizedDomain.label}, ${fallbackDomain.label})`;
+  const tagLabelExpression = sql<string>`COALESCE(${localizedTag.label}, ${fallbackTag.label})`;
+
   const rows = await getDb()
     .select({
       id: tests.id,
-      name: tests.name,
-      slug: tests.slug,
-      shortDescription: tests.shortDescription,
-      objective: tests.objective,
+      name: nameExpression,
+      slug: slugExpression,
+      shortDescription: shortDescriptionExpression,
+      objective: objectiveExpression,
       ageMinMonths: tests.ageMinMonths,
       ageMaxMonths: tests.ageMaxMonths,
-      population: tests.population,
+      population: populationExpression,
       durationMinutes: tests.durationMinutes,
-      materials: tests.materials,
+      materials: materialsExpression,
       isStandardized: tests.isStandardized,
-      publisher: tests.publisher,
-      priceRange: tests.priceRange,
+      publisher: publisherExpression,
+      priceRange: priceRangeExpression,
       buyLink: tests.buyLink,
-      notes: tests.notes,
+      notes: notesExpression,
       bibliography: tests.bibliography,
       createdAt: tests.createdAt,
       updatedAt: tests.updatedAt,
-      domains: sql<string[]>`COALESCE(array_agg(DISTINCT ${domains.label}) FILTER (WHERE ${domains.label} IS NOT NULL), '{}')`,
-      tags: sql<string[]>`COALESCE(array_agg(DISTINCT ${tags.label}) FILTER (WHERE ${tags.label} IS NOT NULL), '{}')`,
+      domains: sql<string[]>`COALESCE(array_agg(DISTINCT ${domainLabelExpression}) FILTER (WHERE ${domainLabelExpression} IS NOT NULL), '{}')`,
+      tags: sql<string[]>`COALESCE(array_agg(DISTINCT ${tagLabelExpression}) FILTER (WHERE ${tagLabelExpression} IS NOT NULL), '{}')`,
     })
     .from(tests)
+    .leftJoin(localizedTest, and(eq(localizedTest.testId, tests.id), eq(localizedTest.locale, locale)))
+    .leftJoin(fallbackTest, and(eq(fallbackTest.testId, tests.id), eq(fallbackTest.locale, defaultLocale)))
     .leftJoin(testDomains, eq(tests.id, testDomains.testId))
     .leftJoin(domains, eq(testDomains.domainId, domains.id))
+    .leftJoin(localizedDomain, and(eq(localizedDomain.domainId, domains.id), eq(localizedDomain.locale, locale)))
+    .leftJoin(fallbackDomain, and(eq(fallbackDomain.domainId, domains.id), eq(fallbackDomain.locale, defaultLocale)))
     .leftJoin(testTags, eq(tests.id, testTags.testId))
     .leftJoin(tags, eq(testTags.tagId, tags.id))
+    .leftJoin(localizedTag, and(eq(localizedTag.tagId, tags.id), eq(localizedTag.locale, locale)))
+    .leftJoin(fallbackTag, and(eq(fallbackTag.tagId, tags.id), eq(fallbackTag.locale, defaultLocale)))
     .where(eq(tests.id, id))
-    .groupBy(tests.id)
+    .groupBy(
+      tests.id,
+      tests.ageMinMonths,
+      tests.ageMaxMonths,
+      tests.durationMinutes,
+      tests.isStandardized,
+      tests.buyLink,
+      tests.bibliography,
+      tests.createdAt,
+      tests.updatedAt,
+    )
     .limit(1);
 
   const parsed = testsResponseSchema.parse({
     tests: rows.map((row) => ({
       ...row,
-      createdAt: toIsoString(row.createdAt ?? null),
-      updatedAt: toIsoString(row.updatedAt ?? null),
+      createdAt: toIsoString((row.createdAt as Date | string | null) ?? null),
+      updatedAt: toIsoString((row.updatedAt as Date | string | null) ?? null),
       domains: row.domains ?? [],
       tags: row.tags ?? [],
       bibliography: row.bibliography ?? [],

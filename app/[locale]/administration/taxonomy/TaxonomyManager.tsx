@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { type Locale } from '@/i18n/routing';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,12 +17,13 @@ import type {
   TaxonomyResponse,
 } from '@/lib/validation/tests';
 
-const taxonomyQueryKey = ['test-taxonomy'] as const;
+const taxonomyQueryKey = (locale: Locale) => ['test-taxonomy', locale] as const;
 const REQUEST_TIMEOUT_MS = 10_000;
 
 function TaxonomyManager() {
   const t = useTranslations('taxonomy');
   const queryClient = useQueryClient();
+  const locale = useLocale() as Locale;
 
   const [domainInput, setDomainInput] = useState('');
   const [tagInput, setTagInput] = useState('');
@@ -72,7 +74,7 @@ function TaxonomyManager() {
 
   const fetchTaxonomy = async (): Promise<TaxonomyResponse> => {
     const response = await fetchWithTimeout(
-      '/api/tests/taxonomy',
+      `/api/tests/taxonomy?locale=${locale}`,
       { cache: 'no-store' },
       t('errors.timeout'),
     );
@@ -90,7 +92,7 @@ function TaxonomyManager() {
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ ...payload, locale }),
       },
       t('errors.timeout'),
     );
@@ -128,14 +130,14 @@ function TaxonomyManager() {
     isError,
     error,
   } = useQuery({
-    queryKey: taxonomyQueryKey,
+    queryKey: taxonomyQueryKey(locale),
     queryFn: fetchTaxonomy,
   });
 
   const createMutation = useMutation({
     mutationFn: createTaxonomyItem,
     onSuccess: (_, variables) => {
-      void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey });
+      void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey(locale) });
       showToast(
         variables.type === 'domain'
           ? t('toast.domainCreated')
@@ -164,7 +166,7 @@ function TaxonomyManager() {
       setDeletingId(variables.id);
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey });
+      void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey(locale) });
       showToast(t('toast.itemDeleted'));
       setErrorMessage(null);
       setDeletingId(null);
@@ -265,7 +267,7 @@ function TaxonomyManager() {
                         label: domain.label,
                       })}
                       onClick={() =>
-                        deleteMutation.mutate({ type: 'domain', id: domain.id })
+                        deleteMutation.mutate({ type: 'domain', id: domain.id, locale })
                       }
                       disabled={
                         deleteMutation.isPending && deletingId === domain.id
@@ -303,6 +305,7 @@ function TaxonomyManager() {
                 createMutation.mutate({
                   type: 'domain',
                   value: normalizedDomainInput,
+                  locale,
                 })
               }
               disabled={
@@ -369,7 +372,7 @@ function TaxonomyManager() {
                         label: tag.label,
                       })}
                       onClick={() =>
-                        deleteMutation.mutate({ type: 'tag', id: tag.id })
+                        deleteMutation.mutate({ type: 'tag', id: tag.id, locale })
                       }
                       disabled={deleteMutation.isPending && deletingId === tag.id}
                     >
@@ -405,6 +408,7 @@ function TaxonomyManager() {
                 createMutation.mutate({
                   type: 'tag',
                   value: normalizedTagInput,
+                  locale,
                 })
               }
               disabled={

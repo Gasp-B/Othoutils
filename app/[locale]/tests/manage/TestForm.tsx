@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,256 +15,13 @@ import { Select } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils/cn';
-import { testsResponseSchema, testSchema, taxonomyResponseSchema, type TestDto } from '@/lib/validation/tests';
+import { type Locale } from '@/i18n/routing';
+import { testsResponseSchema, testSchema, type TestDto } from '@/lib/validation/tests';
 import styles from './test-form.module.css';
 
-type MultiSelectOption = { label: string; value: string };
-
-type MultiSelectCopy = {
-  placeholder: string;
-  dialogLabel: string;
-  dialogTitle: string;
-  dialogHelper: string;
-  searchPlaceholder: string;
-  searchAria: string;
-  clear: string;
-  emptySelection: string;
-  emptyResults: string;
-  remove: string;
-  add: string;
+type TestFormProps = {
+  locale: Locale;
 };
-
-type MultiSelectProps = {
-  id: string;
-  label: string;
-  description?: string;
-  placeholder?: string;
-  options: MultiSelectOption[];
-  values: string[];
-  copy: MultiSelectCopy;
-  onChange: (values: string[]) => void;
-};
-
-type PopupPosition = { top: number; left: number; width: number } | null;
-
-function MultiSelect({ id, label, description, placeholder, options, values, copy, onChange }: MultiSelectProps) {
-  const [query, setQuery] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
-  const [popupPosition, setPopupPosition] = useState<PopupPosition>(null);
-  const t = useTranslations('ManageTests.form.multiSelect');
-
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  const filtered = useMemo(() => {
-    const term = query.trim().toLowerCase();
-    if (!term) return options;
-    return options.filter((option) => option.label.toLowerCase().includes(term));
-  }, [options, query]);
-
-  const selectedOptions = useMemo(
-    () => options.filter((option) => values.includes(option.value)),
-    [options, values],
-  );
-
-  const optionLabelMap = useMemo(
-    () => new Map(options.map((option) => [option.value, option.label])),
-    [options],
-  );
-
-  function toggleValue(value: string) {
-    const hasValue = values.includes(value);
-    const next = hasValue ? values.filter((item) => item !== value) : [...values, value];
-    onChange(next);
-  }
-
-  function closePopup() {
-    setIsOpen(false);
-  }
-
-  function updatePopupPosition() {
-    const rect = triggerRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
-    const viewportWidth = window.innerWidth;
-
-    const popupWidth = Math.min(Math.max(rect.width, 320), Math.min(520, viewportWidth - 24));
-    const maxLeft = viewportWidth - popupWidth - 12;
-    const left = Math.min(Math.max(12, rect.left), Math.max(12, maxLeft));
-
-    const top = Math.min(rect.bottom + 8, window.innerHeight - 16);
-
-    setPopupPosition({
-      top,
-      left,
-      width: popupWidth,
-    });
-  }
-
-  useEffect(() => {
-    if (!isOpen) {
-      setQuery('');
-      return;
-    }
-
-    updatePopupPosition();
-    const handleResize = () => updatePopupPosition();
-    const handleScroll = () => updatePopupPosition();
-
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('scroll', handleScroll, true);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll, true);
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (isOpen) {
-      searchInputRef.current?.focus();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (!isOpen) return;
-      const target = event.target as Node;
-      if (wrapperRef.current?.contains(target)) return;
-      if (overlayRef.current?.contains(target)) return;
-      closePopup();
-    }
-
-    function handleEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        closePopup();
-      }
-    }
-
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, [isOpen]);
-
-  return (
-    <div className={styles.multiSelectWrapper} ref={wrapperRef}>
-      <div className={styles.multiSelectHeader}>
-        <Label htmlFor={id}>{label}</Label>
-        {description ? <p className="helper-text">{description}</p> : null}
-      </div>
-      <button
-        type="button"
-        id={id}
-        className={cn(styles.multiSelectControl, isOpen && styles.multiSelectOpen)}
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-expanded={isOpen}
-        aria-haspopup="dialog"
-        ref={triggerRef}
-      >
-        <div className={styles.multiSelectTokens}>
-          {values.length === 0 ? (
-            <span className="text-subtle">{placeholder ?? t('placeholder')}</span>
-          ) : (
-            values.map((value) => (
-              <Badge
-                key={value}
-                variant="secondary"
-                className={styles.token}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  toggleValue(value);
-                }}
-              >
-                {optionLabelMap.get(value) ?? value}
-                <span aria-hidden>×</span>
-              </Badge>
-            ))
-          )}
-        </div>
-        <span className={styles.chevron} aria-hidden>
-          {isOpen ? '▴' : '▾'}
-        </span>
-      </button>
-
-      {isOpen ? (
-        <div className={styles.popupLayer}>
-          <div className={styles.popupBackdrop} aria-hidden onClick={closePopup} />
-          <div
-            className={styles.popup}
-            ref={overlayRef}
-            style={popupPosition ? { top: popupPosition.top, left: popupPosition.left, width: popupPosition.width } : undefined}
-            role="dialog"
-            aria-modal="true"
-            aria-label={t('dialogLabel', { label })}
-          >
-            <div className={styles.popupHeader}>
-              <div className={styles.popupTitle}>{t('dialogTitle', { label })}</div>
-              <p className="helper-text">{t('filterHelper')}</p>
-            </div>
-
-            <div className={styles.searchBar}>
-              <Input
-                ref={searchInputRef}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={placeholder ?? t('searchPlaceholder')}
-                aria-label={t('filterAria', { label })}
-              />
-              {query ? (
-                <Button variant="ghost" size="sm" type="button" onClick={() => setQuery('')}>
-                  {t('clear')}
-                </Button>
-              ) : null}
-            </div>
-
-            <div className={styles.selectedBadges}>
-              {selectedOptions.length === 0 ? (
-                <p className="helper-text">{t('emptySelection')}</p>
-              ) : (
-                selectedOptions.map((option) => (
-                  <Badge
-                    key={option.value}
-                    variant="outline"
-                    className={styles.selectedToken}
-                    onClick={() => toggleValue(option.value)}
-                  >
-                    {option.label}
-                    <span aria-hidden>×</span>
-                  </Badge>
-                ))
-              )}
-            </div>
-
-            <div className={styles.optionsList}>
-              {filtered.length === 0 ? (
-                <p className={styles.emptyState}>{t('emptyResults')}</p>
-              ) : (
-                filtered.map((option) => {
-                  const active = values.includes(option.value);
-                  return (
-                    <button
-                      type="button"
-                      key={option.value}
-                      className={cn(styles.optionItem, active && styles.optionItemActive)}
-                      onClick={() => toggleValue(option.value)}
-                    >
-                      <span className={styles.optionLabel}>{option.label}</span>
-                      <span className={styles.optionBadge}>{active ? t('remove') : t('add')}</span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 const formSchemaBase = testSchema
   .omit({ id: true, slug: true, createdAt: true, updatedAt: true })
@@ -320,8 +77,8 @@ const defaultValues: FormValues = {
   bibliography: [],
 };
 
-async function fetchTests() {
-  const response = await fetch('/api/tests');
+async function fetchTests(locale: Locale) {
+  const response = await fetch(`/api/tests?locale=${locale}`);
 
   if (!response.ok) {
     throw new Error('fetchTests');
@@ -332,62 +89,48 @@ async function fetchTests() {
   return parsed.tests;
 }
 
-async function fetchTaxonomy() {
-  const response = await fetch('/api/tests/taxonomy');
-
-  if (!response.ok) {
-    throw new Error('fetchTaxonomy');
-  }
-
-  const json = await response.json();
-  return taxonomyResponseSchema.parse(json);
-}
-async function createTest(payload: FormValues, fallbackMessage: string) {
+async function createTest(payload: FormValues, locale: Locale, fallbackMessage: string) {
   const response = await fetch('/api/tests', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, locale }),
   });
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as ApiResponse;
-    throw new Error(json.error ?? 'createTest');
+    throw new Error(json.error ?? fallbackMessage);
   }
 
   return (await response.json()) as ApiResponse;
 }
 
-async function updateTest(payload: FormValues, fallbackMessage: string) {
+async function updateTest(payload: FormValues, locale: Locale, fallbackMessage: string) {
   const response = await fetch('/api/tests', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, locale }),
   });
 
   if (!response.ok) {
     const json = (await response.json().catch(() => ({}))) as ApiResponse;
-    throw new Error(json.error ?? 'updateTest');
+    throw new Error(json.error ?? fallbackMessage);
   }
 
   return (await response.json()) as ApiResponse;
 }
 
-function TestForm() {
+function TestForm({ locale }: TestFormProps) {
   const t = useTranslations('TestsForm');
   const queryClient = useQueryClient();
   const form = useTranslations('ManageTests.form');
   const feedback = useTranslations('ManageTests.feedback');
-  const { data: taxonomy } = useQuery({ queryKey: ['test-taxonomy'], queryFn: fetchTaxonomy });
-  const { data: tests } = useQuery({ queryKey: ['tests'], queryFn: fetchTests });
+  const { data: tests } = useQuery({ queryKey: ['tests', locale], queryFn: () => fetchTests(locale) });
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [newBibliography, setNewBibliography] = useState({ label: '', url: '' });
   const errorTranslationKeyByMessage: Record<string, string> = {
     fetchTests: 'errors.fetchTests',
     'Impossible de récupérer les tests': 'errors.fetchTests',
     'Unable to retrieve tests': 'errors.fetchTests',
-    fetchTaxonomy: 'errors.fetchTaxonomy',
-    'Impossible de charger les domaines et tags': 'errors.fetchTaxonomy',
-    'Unable to load domains and tags': 'errors.fetchTaxonomy',
     createTest: 'errors.create',
     'Impossible de créer le test': 'errors.create',
     'Unable to create the test': 'errors.create',
@@ -428,40 +171,6 @@ function TestForm() {
   const populationValue = watch('population');
   const materialsValue = watch('materials');
 
-  const multiSelectBaseCopy = useMemo<Omit<MultiSelectCopy, 'dialogLabel' | 'dialogTitle' | 'searchAria'>>(
-    () => ({
-      placeholder: t('multiSelect.placeholder'),
-      dialogHelper: t('multiSelect.dialogHelper'),
-      searchPlaceholder: t('multiSelect.searchPlaceholder'),
-      clear: t('multiSelect.clear'),
-      emptySelection: t('multiSelect.emptySelection'),
-      emptyResults: t('multiSelect.emptyResults'),
-      remove: t('multiSelect.remove'),
-      add: t('multiSelect.add'),
-    }),
-    [t],
-  );
-
-  const domainCopy = useMemo<MultiSelectCopy>(
-    () => ({
-      ...multiSelectBaseCopy,
-      dialogLabel: t('multiSelect.dialogLabel', { label: t('sections.taxonomy.domainsLabel') }),
-      dialogTitle: t('multiSelect.dialogTitle', { label: t('sections.taxonomy.domainsLabel') }),
-      searchAria: t('multiSelect.searchAria', { label: t('sections.taxonomy.domainsLabel') }),
-    }),
-    [multiSelectBaseCopy, t],
-  );
-
-  const tagCopy = useMemo<MultiSelectCopy>(
-    () => ({
-      ...multiSelectBaseCopy,
-      dialogLabel: t('multiSelect.dialogLabel', { label: t('sections.taxonomy.tagsLabel') }),
-      dialogTitle: t('multiSelect.dialogTitle', { label: t('sections.taxonomy.tagsLabel') }),
-      searchAria: t('multiSelect.searchAria', { label: t('sections.taxonomy.tagsLabel') }),
-    }),
-    [multiSelectBaseCopy, t],
-  );
-
   useEffect(() => {
     if (!selectedTestId) {
       reset(defaultValues);
@@ -496,10 +205,9 @@ function TestForm() {
   }, [reset, selectedTestId, tests]);
 
   const createMutation = useMutation({
-    mutationFn: (payload: FormValues) => createTest(payload, t('states.createError')),
+    mutationFn: (payload: FormValues) => createTest(payload, locale, t('states.createError')),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['tests'] });
-      void queryClient.invalidateQueries({ queryKey: ['test-taxonomy'] });
+      void queryClient.invalidateQueries({ queryKey: ['tests', locale] });
       reset(defaultValues);
       setSelectedTestId(null);
       setNewBibliography({ label: '', url: '' });
@@ -507,10 +215,9 @@ function TestForm() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: FormValues) => updateTest(payload, t('states.updateError')),
+    mutationFn: (payload: FormValues) => updateTest(payload, locale, t('states.updateError')),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['tests'] });
-      void queryClient.invalidateQueries({ queryKey: ['test-taxonomy'] });
+      void queryClient.invalidateQueries({ queryKey: ['tests', locale] });
     },
   });
 

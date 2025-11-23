@@ -71,7 +71,7 @@ export default async function CataloguePage({ params }: LocalePageProps) {
   let loadError: string | null = null;
 
   try {
-    tests = await getTestsWithMetadata();
+    tests = await getTestsWithMetadata(locale as Locale);
   } catch (error) {
     console.error('Impossible de charger le catalogue complet', error);
     loadError = t('errors.load');
