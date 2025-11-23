@@ -10,6 +10,15 @@ BEGIN
   END IF;
 END $$;
 
+-- Ensure policies can reference the status enum before altering table columns.
+CREATE OR REPLACE FUNCTION public.can_view_status(target_status validation_status)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT public.has_moderation_access() OR target_status = 'published';
+$$;
+
 -- tools_catalog: normalize status values and convert to enum.
 -- Drop policies that depend on the status column type to avoid ALTER TYPE errors.
 DROP POLICY IF EXISTS tools_catalog_select_by_role ON public.tools_catalog;
