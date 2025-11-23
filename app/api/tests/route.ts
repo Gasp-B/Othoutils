@@ -185,7 +185,17 @@ async function getTestsWithRls(locale: Locale = defaultLocale): Promise<TestDto[
         priceRange: selectedTranslation?.price_range ?? null,
         buyLink: test.buy_link,
         notes: selectedTranslation?.notes ?? null,
-        bibliography: Array.isArray(test.bibliography) ? test.bibliography : [],
+        bibliography: Array.isArray(test.bibliography)
+          ? test.bibliography.filter(
+              (entry): entry is { label: string; url: string } =>
+                typeof entry === 'object' &&
+                !!entry &&
+                'label' in entry &&
+                'url' in entry &&
+                typeof (entry as { label?: unknown }).label === 'string' &&
+                typeof (entry as { url?: unknown }).url === 'string',
+            )
+          : [],
         createdAt: toIsoString(test.created_at ?? null),
         updatedAt: toIsoString(test.updated_at ?? null),
         domains: (domainsByTest.get(test.id) ?? [])
