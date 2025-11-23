@@ -12,11 +12,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Supabase CLI
-        run: |
-          curl -fsSL https://get.supabase.com/cli | sh
-          echo "$HOME/.supabase/bin" >> $GITHUB_PATH
-          export PATH="$HOME/.supabase/bin:$PATH"
-          supabase --version
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
       - name: Dump Supabase schema (schema-only)
         env:
