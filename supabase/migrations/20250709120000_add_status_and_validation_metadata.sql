@@ -146,6 +146,12 @@ DROP POLICY IF EXISTS tests_select_by_role ON public.tests;
 DROP POLICY IF EXISTS tests_manage_by_moderators ON public.tests;
 DROP POLICY IF EXISTS tests_translations_select_by_role ON public.tests_translations;
 DROP POLICY IF EXISTS tests_translations_manage_by_moderators ON public.tests_translations;
+DROP POLICY IF EXISTS domains_select_by_role ON public.domains;
+DROP POLICY IF EXISTS domains_translations_select_by_role ON public.domains_translations;
+DROP POLICY IF EXISTS test_domains_select_by_role ON public.test_domains;
+DROP POLICY IF EXISTS tags_select_by_role ON public.tags;
+DROP POLICY IF EXISTS tags_translations_select_by_role ON public.tags_translations;
+DROP POLICY IF EXISTS test_tags_select_by_role ON public.test_tags;
 
 ALTER TABLE public.tests DROP CONSTRAINT IF EXISTS tests_status_check;
 ALTER TABLE public.tests
@@ -194,5 +200,88 @@ ON public.tests_translations
 FOR ALL
 USING (public.has_moderation_access())
 WITH CHECK (public.has_moderation_access());
+
+-- Recreate dependent policies that reference tests.status now that it uses the enum.
+CREATE POLICY domains_select_by_role
+ON public.domains
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.test_domains td
+    JOIN public.tests t ON t.id = td.test_id
+    WHERE td.domain_id = domains.id
+      AND public.can_view_status(t.status)
+  )
+);
+
+CREATE POLICY domains_translations_select_by_role
+ON public.domains_translations
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.test_domains td
+    JOIN public.tests t ON t.id = td.test_id
+    WHERE td.domain_id = domains_translations.domain_id
+      AND public.can_view_status(t.status)
+  )
+);
+
+CREATE POLICY test_domains_select_by_role
+ON public.test_domains
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.tests t
+    WHERE t.id = test_domains.test_id
+      AND public.can_view_status(t.status)
+  )
+);
+
+CREATE POLICY tags_select_by_role
+ON public.tags
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.test_tags tt
+    JOIN public.tests t ON t.id = tt.test_id
+    WHERE tt.tag_id = tags.id
+      AND public.can_view_status(t.status)
+  )
+);
+
+CREATE POLICY tags_translations_select_by_role
+ON public.tags_translations
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.test_tags tt
+    JOIN public.tests t ON t.id = tt.test_id
+    WHERE tt.tag_id = tags_translations.tag_id
+      AND public.can_view_status(t.status)
+  )
+);
+
+CREATE POLICY test_tags_select_by_role
+ON public.test_tags
+FOR SELECT
+USING (
+  public.has_moderation_access()
+  OR EXISTS (
+    SELECT 1
+    FROM public.tests t
+    WHERE t.id = test_tags.test_id
+      AND public.can_view_status(t.status)
+  )
+);
 
 COMMIT;
