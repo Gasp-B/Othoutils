@@ -225,3 +225,51 @@ export const testTags = pgTable(
     pk: primaryKey({ columns: [table.testId, table.tagId] }),
   }),
 );
+
+export const pathologies = pgTable(
+  'pathologies',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    slug: text('slug').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    slugConstraint: uniqueIndex('pathologies_slug_key').on(table.slug),
+  }),
+);
+
+export const pathologyTranslations = pgTable(
+  'pathology_translations',
+  {
+    pathologyId: uuid('pathology_id')
+      .notNull()
+      .references(() => pathologies.id, { onDelete: 'cascade' }),
+    locale: text('locale').notNull(),
+    label: text('label').notNull(),
+    description: text('description'),
+    synonyms: text('synonyms').array().notNull().default(sql`'{}'::text[]`),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.pathologyId, table.locale] }),
+  }),
+);
+
+export const testPathologies = pgTable(
+  'test_pathologies',
+  {
+    testId: uuid('test_id')
+      .notNull()
+      .references(() => tests.id, { onDelete: 'cascade' }),
+    pathologyId: uuid('pathology_id')
+      .notNull()
+      .references(() => pathologies.id, { onDelete: 'cascade' }),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.testId, table.pathologyId] }),
+  }),
+);
+
+export type PathologyRecord = typeof pathologies.$inferSelect;
+export type PathologyTranslationRecord = typeof pathologyTranslations.$inferSelect;
+export type TestPathologyRecord = typeof testPathologies.$inferSelect;
