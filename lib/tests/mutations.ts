@@ -150,7 +150,6 @@ async function upsertPathologies(db: DbClient, pathologyLabels: string[], locale
 
   const existingTranslations = await db
     .select({
-      id: pathologyTranslations.id,
       pathologyId: pathologyTranslations.pathologyId,
       label: pathologyTranslations.label,
       locale: pathologyTranslations.locale,
