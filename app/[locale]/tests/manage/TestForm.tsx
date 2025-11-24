@@ -980,7 +980,7 @@ function TestForm({ locale }: TestFormProps) {
               })}
 
             {canCreatePathology && (
-              <Button type="button" variant="secondary" onClick={addPathologyFromQuery}>
+              <Button type="button" variant="outline" onClick={addPathologyFromQuery}>
                 {multiSelect('add')}
                 {` “${pathologyQuery.trim()}”`}
               </Button>
