@@ -251,3 +251,16 @@
   border-color: rgba(14, 165, 233, 0.35);
   color: #0f172a;
 }
+
+.columnStack {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; /* C'est cet espace qui empêchera les boîtes de se toucher */
+}
+
+/* Petit bonus pour aligner les champs min/max (âge) sur une même ligne */
+.flexRow {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}

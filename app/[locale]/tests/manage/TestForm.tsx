@@ -17,12 +17,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { type Locale } from '@/i18n/routing';
 import { testsResponseSchema, testSchema, type TestDto, type TaxonomyResponse } from '@/lib/validation/tests';
+// Import du fichier CSS module
+import styles from './test-form.module.css';
 
 type TestFormProps = {
   locale: Locale;
 };
 
-// --- Schema ---
+// --- Schéma Zod ---
 const formSchemaBase = testSchema
   .omit({ id: true, slug: true, createdAt: true, updatedAt: true })
   .extend({
@@ -66,7 +68,7 @@ const defaultValues: FormValues = {
   bibliography: [],
 };
 
-// --- Fetchers ---
+// --- Fonctions API (Fetchers) ---
 async function fetchTests(locale: Locale) {
   const response = await fetch(`/api/tests?locale=${locale}`);
   if (!response.ok) throw new Error('Impossible de récupérer les tests');
@@ -102,7 +104,7 @@ async function saveTest(payload: FormValues, locale: Locale, method: 'POST' | 'P
   return (await response.json()) as ApiResponse;
 }
 
-// --- Local Toast Component ---
+// --- Composant Toast Local ---
 function Toast({ message, onClose }: { message: string; onClose: () => void }) {
   useEffect(() => {
     const timer = setTimeout(onClose, 4000);
@@ -119,9 +121,8 @@ function Toast({ message, onClose }: { message: string; onClose: () => void }) {
   );
 }
 
-// --- Main Component ---
+// --- Composant Principal ---
 function TestForm({ locale }: TestFormProps) {
-  // Removed unused 't'
   const formT = useTranslations('ManageTests.form');
   const feedbackT = useTranslations('ManageTests.feedback');
   const multiSelectT = useTranslations('ManageTests.form.multiSelect');
@@ -166,6 +167,7 @@ function TestForm({ locale }: TestFormProps) {
   const currentPathologies = watch('pathologies') ?? [];
   const currentBibliography = watch('bibliography');
 
+  // Chargement des données lors de la sélection d'un test
   useEffect(() => {
     if (!selectedTestId) {
       reset(defaultValues);
@@ -232,7 +234,6 @@ function TestForm({ locale }: TestFormProps) {
   };
 
   return (
-    // Fixed: Handle the promise returned by handleSubmit
     <form className="notion-form" onSubmit={(e) => void handleSubmit(onSubmit)(e)}>
       {toastMsg && <Toast message={toastMsg} onClose={() => setToastMsg(null)} />}
 
@@ -283,7 +284,8 @@ function TestForm({ locale }: TestFormProps) {
       {errors.name && <p className="text-red-500 text-sm ml-2">{errors.name.message}</p>}
 
       <div className="content-grid">
-        <div className="space-y-6">
+        {/* COLONNE GAUCHE */}
+        <div className={styles.columnStack}>
           <Card>
             <CardHeader><CardTitle>{formT('sections.detailedSummary.title')}</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -339,12 +341,13 @@ function TestForm({ locale }: TestFormProps) {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        {/* COLONNE DROITE */}
+        <div className={styles.columnStack}>
           <Card className="property-panel">
             <CardHeader>
               <CardTitle>{formT('sections.taxonomy.title')}</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className={styles.columnStack}> {/* Espacement interne */}
               
               <MultiSelect
                 label={formT('sections.taxonomy.domainsLabel')}
@@ -384,7 +387,8 @@ function TestForm({ locale }: TestFormProps) {
               
               <div className="property-row">
                 <Label>{formT('fields.age.label')}</Label>
-                <div className="flex gap-2">
+                {/* Utilisation de flexRow pour mettre min/max sur la même ligne */}
+                <div className={styles.flexRow}>
                   <Input type="number" {...register('ageMinMonths', { valueAsNumber: true })} placeholder="Min" />
                   <Input type="number" {...register('ageMaxMonths', { valueAsNumber: true })} placeholder="Max" />
                 </div>
