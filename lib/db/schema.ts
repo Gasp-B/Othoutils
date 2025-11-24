@@ -19,93 +19,6 @@ export const authUsers = auth.table('users', {
   id: uuid('id').primaryKey(),
 });
 
-export const toolsCatalog = pgTable(
-  'tools_catalog',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    title: text('title').notNull(),
-    category: text('category').notNull(),
-    colorLabel: text('color_label'),
-    tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
-    description: text('description'),
-    links: jsonb('links')
-      .notNull()
-      .$type<Array<{ label: string; url: string }>>()
-      .default(sql`'[]'::jsonb`),
-    notes: text('notes'),
-    targetPopulation: text('target_population'),
-    status: text('status').notNull().default('draft'),
-    validatedBy: uuid('validated_by').references(() => authUsers.id),
-    validatedAt: timestamp('validated_at', { withTimezone: true }),
-    createdBy: uuid('created_by').references(() => authUsers.id),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    statusCheck: check('tools_catalog_status_check', sql`${table.status} in ('draft','published','archived')`),
-  }),
-);
-
-export const toolsCatalogTranslations = pgTable(
-  'tools_catalog_translations',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    toolCatalogId: uuid('tool_catalog_id')
-      .notNull()
-      .references(() => toolsCatalog.id, { onDelete: 'cascade' }),
-    locale: text('locale').notNull(),
-    title: text('title').notNull(),
-    category: text('category').notNull(),
-    description: text('description'),
-    notes: text('notes'),
-    targetPopulation: text('target_population'),
-  },
-  (table) => ({
-    localeConstraint: uniqueIndex('tools_catalog_translations_tool_catalog_id_locale_key').on(
-      table.toolCatalogId,
-      table.locale,
-    ),
-  }),
-);
-
-export type ToolRecord = typeof toolsCatalog.$inferSelect;
-
-export const tools = pgTable(
-  'tools',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    name: text('name').notNull(),
-    category: text('category').notNull(),
-    type: text('type').notNull(),
-    tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
-    source: text('source').notNull(),
-    status: text('status').notNull().default('draft'),
-    validatedBy: uuid('validated_by').references(() => authUsers.id),
-    validatedAt: timestamp('validated_at', { withTimezone: true }),
-    createdBy: uuid('created_by').references(() => authUsers.id),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    statusCheck: check('tools_status_check', sql`${table.status} in ('draft','published','archived')`),
-  }),
-);
-
-export const toolsTranslations = pgTable(
-  'tools_translations',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    toolId: uuid('tool_id')
-      .notNull()
-      .references(() => tools.id, { onDelete: 'cascade' }),
-    locale: text('locale').notNull(),
-    name: text('name').notNull(),
-    category: text('category').notNull(),
-    type: text('type').notNull(),
-  },
-  (table) => ({
-    localeConstraint: uniqueIndex('tools_translations_tool_id_locale_key').on(table.toolId, table.locale),
-  }),
-);
-
 export const sections = pgTable('sections', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -232,7 +145,7 @@ export const tests = pgTable(
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    statusCheck: check('tests_status_check', sql`${table.status} in ('draft','published','archived')`),
+    statusCheck: check('tests_status_check', sql`${table.status} in ('draft','in_review','published','archived')`),
   }),
 );
 

@@ -8,7 +8,7 @@ import type { CatalogueDomain } from '@/lib/navigation/catalogue';
 
 function Header() {
   const t = useTranslations('Header');
-  const locale = useLocale();
+  const locale = useLocale(); // Récupère la langue active (fr ou en)
   const pathname = usePathname();
   const router = useRouter();
   const navErrorMessage = t('navError');
@@ -22,6 +22,7 @@ function Header() {
 
     async function loadCatalogue() {
       try {
+        // Appel avec la locale explicite
         const res = await fetch(`/api/catalogue?locale=${locale}`, {
           method: 'GET',
           cache: 'no-store',
@@ -34,7 +35,6 @@ function Header() {
         const data: { domains?: CatalogueDomain[] } = await res.json();
 
         if (!cancelled) {
-          // On suppose que l’API renvoie { domains: [...] }
           setCatalogueDomains(Array.isArray(data.domains) ? data.domains : []);
         }
       } catch (err: unknown) {
@@ -49,6 +49,7 @@ function Header() {
       }
     }
 
+    // Recharger le catalogue à chaque changement de locale
     void loadCatalogue();
 
     return () => {

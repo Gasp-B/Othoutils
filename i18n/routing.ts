@@ -20,11 +20,6 @@ export const pathnames = {
     en: '/catalogue/[slug]/[tag]',
     fr: '/catalogue/[slug]/[tag]',
   },
-  '/tools': {
-    en: '/tools',
-    fr: '/outils',
-  },
-  '/tools/new': '/tools/new',
   '/administration': '/administration',
   '/administration/taxonomy': '/administration/taxonomy',
   '/tests/manage': '/tests/manage',
