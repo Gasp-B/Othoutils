@@ -42,7 +42,16 @@ function getUpdatedEntry(key: string) {
 
 function getConnectSources() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-  return ["'self'", supabaseUrl].filter(Boolean).join(' ');
+  // On ajoute wss:// pour le Realtime de Supabase et vercel.live pour les outils Vercel
+  const supabaseWss = supabaseUrl.replace('https://', 'wss://');
+  
+  return [
+    "'self'", 
+    supabaseUrl, 
+    supabaseWss,
+    "https://vercel.live", 
+    "https://*.vercel.live"
+  ].filter(Boolean).join(' ');
 }
 
 function buildNonce() {
@@ -50,17 +59,22 @@ function buildNonce() {
 }
 
 function getSecurityHeaders(nonce: string) {
-  const scriptSrc = `script-src 'self' 'nonce-${nonce}'`;
-  const styleSrc = `style-src 'self' 'nonce-${nonce}'`;
+  // Ajout de vercel.live aux sources de scripts et de styles
+  const scriptSrc = `script-src 'self' 'nonce-${nonce}' https://vercel.live https://*.vercel.live`;
+  const styleSrc = `style-src 'self' 'nonce-${nonce}' https://vercel.live https://*.vercel.live`;
+  
   const contentSecurityPolicy = [
     "default-src 'self'",
     "base-uri 'self'",
     "font-src 'self' data:",
-    "img-src 'self' data:",
+    // Ajout de vercel.live et blob: (souvent nécessaire pour les prévisualisations d'images)
+    "img-src 'self' data: blob: https://vercel.live https://*.vercel.live",
     "object-src 'none'",
     scriptSrc,
     styleSrc,
     `connect-src ${getConnectSources()}`,
+    // Ajout de vercel.live pour les iframes (la toolbar Vercel utilise des iframes)
+    "frame-src 'self' https://vercel.live https://*.vercel.live",
     "frame-ancestors 'none'",
     "form-action 'self'",
   ].join('; ');
