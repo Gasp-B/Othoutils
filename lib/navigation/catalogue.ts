@@ -2,7 +2,6 @@ import { createRouteHandlerSupabaseClient } from '@/lib/supabaseClient';
 import { slugify } from '@/lib/utils/slug';
 import { defaultLocale, type Locale } from '@/i18n/routing';
 
-// On récupère le type de retour de la fonction asynchrone pour typer correctement le client
 type SupabaseClient = Awaited<ReturnType<typeof createRouteHandlerSupabaseClient>>;
 
 type DomainTranslationRow = { domain_id: string; locale: string; label: string; slug: string };
@@ -17,35 +16,30 @@ export async function getCatalogueTaxonomy(
   locale: Locale = defaultLocale,
   client?: SupabaseClient,
 ): Promise<CatalogueDomain[]> {
-  // IMPORTANT : on attend la création du client si celui-ci n'est pas fourni
   const supabase = client ?? (await createRouteHandlerSupabaseClient());
 
+  // 1. Récupérer les tests publiés
   const [testsResult] = await Promise.all([
     supabase.from('tests').select('id').eq('status', 'published').returns<{ id: string }[]>(),
   ]);
 
-  if (testsResult.error) {
-    throw testsResult.error;
-  }
+  if (testsResult.error) throw testsResult.error;
 
-  const publishedTestIds = (testsResult.data ?? []).map((row) => row.id as string);
+  const publishedTestIds = (testsResult.data ?? []).map((row) => row.id);
 
+  // Si aucun test publié, menu vide
   if (publishedTestIds.length === 0) {
     return [];
   }
 
+  // 2. Récupérer les relations Domaines/Tags pour ces tests
   const [testDomainsResult, testTagsResult] = await Promise.all([
     supabase.from('test_domains').select('test_id, domain_id').in('test_id', publishedTestIds),
     supabase.from('test_tags').select('test_id, tag_id').in('test_id', publishedTestIds),
   ]);
 
-  if (testDomainsResult.error) {
-    throw testDomainsResult.error;
-  }
-
-  if (testTagsResult.error) {
-    throw testTagsResult.error;
-  }
+  if (testDomainsResult.error) throw testDomainsResult.error;
+  if (testTagsResult.error) throw testTagsResult.error;
 
   const testDomainRows = (testDomainsResult.data ?? []) as TestDomainRow[];
   const testTagRows = (testTagsResult.data ?? []) as TestTagRow[];
@@ -53,10 +47,12 @@ export async function getCatalogueTaxonomy(
   const domainIds = Array.from(new Set(testDomainRows.map((row) => row.domain_id)));
   const tagIds = Array.from(new Set(testTagRows.map((row) => row.tag_id)));
 
-  if (domainIds.length === 0 || tagIds.length === 0) {
+  // Si les tests n'ont pas de domaines, menu vide
+  if (domainIds.length === 0) {
     return [];
   }
 
+  // 3. Récupérer les traductions
   const [domainTranslationsResult, tagTranslationsResult] = await Promise.all([
     supabase
       .from('domains_translations')
@@ -70,14 +66,10 @@ export async function getCatalogueTaxonomy(
       .in('locale', [locale, defaultLocale]),
   ]);
 
-  if (domainTranslationsResult.error) {
-    throw domainTranslationsResult.error;
-  }
+  if (domainTranslationsResult.error) throw domainTranslationsResult.error;
+  if (tagTranslationsResult.error) throw tagTranslationsResult.error;
 
-  if (tagTranslationsResult.error) {
-    throw tagTranslationsResult.error;
-  }
-
+  // ... (le reste de la logique de mapping reste identique)
   const domainTranslations = (domainTranslationsResult.data ?? []) as DomainTranslationRow[];
   const tagTranslations = (tagTranslationsResult.data ?? []) as TagTranslationRow[];
 
@@ -112,9 +104,7 @@ export async function getCatalogueTaxonomy(
       const fallback = translations.find((row) => row.locale === defaultLocale);
       const label = localized?.label ?? fallback?.label;
 
-      if (!label) {
-        continue;
-      }
+      if (!label) continue;
 
       const tag: CatalogueTag = { id: tagId, label, slug: slugify(label) };
       const existing = tagsByDomain.get(relation.domain_id) ?? [];
@@ -135,9 +125,7 @@ export async function getCatalogueTaxonomy(
       const label = localized?.label ?? fallback?.label;
       const slug = localized?.slug ?? fallback?.slug;
 
-      if (!label || !slug) {
-        return null;
-      }
+      if (!label || !slug) return null;
 
       return {
         id,

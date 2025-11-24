@@ -33,7 +33,7 @@
     "Hero": {
         "sectionLabel": "Référentiels conçus et validés par des orthophonistes",
         "title": "Une bibliothèque clinique pour consulter des outils éprouvés et suivre leur validation",
-        "lead": "Pensé pour les cabinets, centres hospitaliers et services de rééducation : Othoutils met en avant les questionnaires, batteries et fiches de suivi déjà relus par des professionnels de santé. Les équipes peuvent ensuite proposer, en toute discrétion, des ajustements documentés et relus avant diffusion.",
+        "lead": "Pensé pour les cabinets, centres hospitaliers et services de rééducation : Othoutils met en avant les questionnaires, batteries et fiches de suivi déjà relus par des professionnels de santé.",
         "primaryCta": "Consulter les référentiels validés",
         "secondaryCta": "Comprendre la validation éditoriale",
         "cards": {
@@ -92,33 +92,9 @@
             }
         }
     },
-  "ToolCard": {
-    "status": {
-      "draft": "Brouillon",
-      "published": "Publié",
-      "archived": "Archivé"
-        },
-        "labels": {
-            "type": "Type : {type}",
-            "source": "Source",
-            "sourceAria": "Consulter la source de {toolName}"
-        },
-        "fallback": {
-            "description": "Cet outil n'a pas encore de description détaillée.",
-            "population": "Tous publics"
-        },
-        "cta": {
-      "viewDetails": "Voir la fiche détaillée"
-    }
-  },
-  "ApiTools": {
-    "errors": {
-      "fetch": "Impossible de récupérer les outils pour le moment. Merci de réessayer plus tard."
-    }
-  },
-  "Catalogue": {
-    "metadata": {
-      "title": "Othoutils | Catalogue clinique",
+    "Catalogue": {
+        "metadata": {
+            "title": "Othoutils | Catalogue clinique",
             "description": "Tests, outils et évaluations orthophoniques réunis dans un catalogue éditorialisé."
         },
         "sectionLabel": "Catalogue des tests",
@@ -544,7 +520,6 @@
             "deletePending": "Suppression…"
         }
     },
-
     "TaxonomyAdmin": {
         "metadata": {
             "title": "Gérer les catégories et tags | Othoutils",
@@ -610,79 +585,6 @@
                 "tagCreated": "Le tag a été enregistré et sera disponible dans le formulaire de test.",
                 "deleted": "Élément supprimé. Les listes seront actualisées."
             }
-        }
-    },
-    "ToolsNew": {
-        "metadata": {
-            "title": "Ajouter un outil | Othoutils",
-            "description": "Créez une fiche d'outil pour enrichir le catalogue."
-        },
-        "sectionLabel": "Créer une fiche outil",
-        "intro": {
-            "title": "Renseignez les informations clés pour qu'une nouvelle fiche apparaisse dans le catalogue.",
-            "required": "Les champs Nom, Catégorie, Type, Tags et Source sont obligatoires. Les fiches créées sont signalées comme contributions communautaires et apparaîtront dans la liste principale.",
-            "preview": "Besoin de vérifier le rendu ? Consultez le <catalogLink>catalogue</catalogLink> après validation."
-        },
-        "links": {
-            "catalogLabel": "catalogue"
-        }
-    },
-    "ToolForm": {
-        "fields": {
-            "name": {
-                "label": "Nom de l'outil",
-                "placeholder": "Exemple : Grille de repérage OMF"
-            },
-            "category": {
-                "label": "Catégorie",
-                "placeholder": "Bilan, Diagnostic, OMF…"
-            },
-            "type": {
-                "label": "Type",
-                "placeholder": "Questionnaire, batterie, suivi…"
-            },
-            "tags": {
-                "label": "Tags",
-                "placeholder": "dysarthrie, accompagnement, cognition"
-            },
-            "source": {
-                "label": "Source",
-                "placeholder": "https://…"
-            }
-        },
-        "helpers": {
-            "tags": "Séparez les tags par des virgules. Ils seront utilisés pour filtrer le catalogue."
-        },
-        "validation": {
-            "name": {
-                "required": "Le nom est requis"
-            },
-            "category": {
-                "required": "La catégorie est requise"
-            },
-            "type": {
-                "required": "Le type est requis"
-            },
-            "tags": {
-                "required": "Ajoutez au moins un tag, séparés par des virgules"
-            },
-            "source": {
-                "url": "La source doit être une URL valide"
-            },
-            "fallback": "Impossible d'enregistrer l'outil"
-        },
-        "submit": {
-            "idle": "Créer la fiche",
-            "pending": "Enregistrement…"
-        },
-        "feedback": {
-            "success": "La fiche a été créée. Elle apparaîtra dans le catalogue sous l'étiquette « Communauté ».",
-            "error": "Une erreur est survenue."
-        }
-    },
-    "ApiTools": {
-        "errors": {
-            "fetch": "Impossible de récupérer les outils"
         }
     }
 }
