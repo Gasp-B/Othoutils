@@ -24,3 +24,10 @@ export const pathnames = {
   '/administration/taxonomy': '/administration/taxonomy',
   '/tests/manage': '/tests/manage',
 } satisfies Pathnames<typeof locales>;
+
+export const routing = {
+  locales,
+  defaultLocale,
+  localePrefix,
+  pathnames,
+};
