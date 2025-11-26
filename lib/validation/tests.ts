@@ -1,9 +1,4 @@
-{
-type: uploaded file
-fileName: gasp-b/orthoutils/Orthoutils-e4995abbd2fb224979e887f8259e243181cf18bd/lib/validation/tests.ts
-fullContent:
 import { z } from 'zod';
-
 import { defaultLocale, locales } from '@/i18n/routing';
 
 const localeEnum = z.enum(locales);
@@ -117,4 +112,3 @@ export const taxonomyDeletionSchema = z.object({
 
 export type TaxonomyMutationInput = z.infer<typeof taxonomyMutationSchema>;
 export type TaxonomyDeletionInput = z.infer<typeof taxonomyDeletionSchema>;
-}
