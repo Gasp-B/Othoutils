@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback, type KeyboardEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { type Locale } from '@/i18n/routing';
@@ -37,6 +37,56 @@ const EditIcon = () => (
 const TrashIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
 );
+const FolderIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+    aria-hidden
+  >
+    <path d="M3 6a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+  </svg>
+);
+const HashIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+    aria-hidden
+  >
+    <path d="M9 3 7 21" />
+    <path d="M17 3 15 21" />
+    <path d="M3 9h19" />
+    <path d="M2 15h19" />
+  </svg>
+);
+const StethoscopeIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-4 w-4"
+    aria-hidden
+  >
+    <path d="M6 3v6a6 6 0 0 0 12 0V3" />
+    <path d="M8 15a6 6 0 0 0 12 0v-3" />
+    <circle cx="20" cy="10" r="2" />
+  </svg>
+);
 
 export default function TaxonomyManager() {
   const t = useTranslations('taxonomy');
@@ -45,6 +95,11 @@ export default function TaxonomyManager() {
 
   const [activeTab, setActiveTab] = useState<Tab>('pathologies');
   const [editingItem, setEditingItem] = useState<TaxonomyListItem | null>(null);
+  const tabRefs = useRef<Record<Tab, HTMLButtonElement | null>>({
+    pathologies: null,
+    domains: null,
+    tags: null,
+  });
 
   // Form States
   const [labelInput, setLabelInput] = useState('');
@@ -84,7 +139,7 @@ export default function TaxonomyManager() {
   }, [activeTab, resetForm]);
 
   // --- Data Fetching ---
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, isFetching } = useQuery({
     queryKey: taxonomyQueryKey(locale),
     queryFn: async () => {
       const res = await fetch(`/api/tests/taxonomy?locale=${locale}`, { cache: 'no-store' });
@@ -187,6 +242,58 @@ export default function TaxonomyManager() {
     return [...list].sort((a, b) => a.label.localeCompare(b.label));
   }, [data, activeTab]);
 
+  const tabCounts = useMemo(() => {
+    if (!data) {
+      return {
+        pathologies: 0,
+        domains: 0,
+        tags: 0,
+      } satisfies Record<Tab, number>;
+    }
+
+    return {
+      pathologies: (data.pathologies || []).length,
+      domains: (data.domains || []).length,
+      tags: (data.tags || []).length,
+    } satisfies Record<Tab, number>;
+  }, [data]);
+
+  const tabOrder: Tab[] = ['pathologies', 'domains', 'tags'];
+  const tabPanelId = 'taxonomy-tabpanel';
+
+  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, currentTab: Tab) => {
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+
+    event.preventDefault();
+    const currentIndex = tabOrder.indexOf(currentTab);
+
+    if (event.key === 'Home') {
+      setActiveTab(tabOrder[0]);
+      tabRefs.current[tabOrder[0]]?.focus();
+      return;
+    }
+
+    if (event.key === 'End') {
+      setActiveTab(tabOrder[tabOrder.length - 1]);
+      tabRefs.current[tabOrder[tabOrder.length - 1]]?.focus();
+      return;
+    }
+
+    const offset = event.key === 'ArrowRight' ? 1 : -1;
+    const nextIndex = (currentIndex + offset + tabOrder.length) % tabOrder.length;
+    const nextTab = tabOrder[nextIndex];
+    setActiveTab(nextTab);
+    tabRefs.current[nextTab]?.focus();
+  };
+
+  const showTabLoading = isLoading || isFetching;
+
+  const tabs = [
+    { value: 'pathologies' as const, icon: StethoscopeIcon },
+    { value: 'domains' as const, icon: FolderIcon },
+    { value: 'tags' as const, icon: HashIcon },
+  ];
+
   const alreadyExists = !editingItem && activeList.some(
     (item) => item.label.toLowerCase() === labelInput.trim().toLowerCase(),
   );
@@ -200,20 +307,58 @@ export default function TaxonomyManager() {
       )}
 
       <div className="flex justify-center">
-        <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200">
-          {(['pathologies', 'domains', 'tags'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                activeTab === tab
-                  ? 'bg-white text-slate-900 shadow-sm ring-1 ring-black/5'
-                  : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
-              }`}
-            >
-              {t(`${tab}.toolbarTitle`)}
-            </button>
-          ))}
+        <div
+          role="tablist"
+          aria-label={t('common.listTitle')}
+          className="inline-flex items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50/80 p-1 backdrop-blur"
+        >
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.value}
+                ref={(node) => {
+                  tabRefs.current[tab.value] = node;
+                }}
+                role="tab"
+                aria-selected={activeTab === tab.value}
+                aria-controls={tabPanelId}
+                id={`taxonomy-tab-${tab.value}`}
+                tabIndex={activeTab === tab.value ? 0 : -1}
+                onClick={() => setActiveTab(tab.value)}
+                onKeyDown={(event) => handleTabKeyDown(event, tab.value)}
+                className={`group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 ${
+                  activeTab === tab.value
+                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-inset ring-slate-200'
+                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
+                }`}
+              >
+                <span className={`flex h-6 w-6 items-center justify-center rounded-lg ${
+                  activeTab === tab.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 shadow-inner'
+                }`}>
+                  <Icon />
+                </span>
+                <span className="truncate">{t(`${tab.value}.toolbarTitle`)}</span>
+                <Badge
+                  variant="secondary"
+                  className={`ml-1 h-6 min-w-[2rem] justify-center rounded-full px-2 text-xs font-semibold ${
+                    activeTab === tab.value
+                      ? 'bg-slate-900/10 text-slate-900'
+                      : 'bg-white text-slate-600'
+                  }`}
+                  aria-live="polite"
+                  aria-busy={showTabLoading}
+                >
+                  {showTabLoading ? (
+                    <span className="inline-flex h-3 w-8 animate-pulse rounded-full bg-slate-200" aria-hidden />
+                  ) : (
+                    tabCounts[tab.value]
+                  )}
+                  <span className="sr-only">{t('common.listTitle')}</span>
+                </Badge>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -335,7 +480,12 @@ export default function TaxonomyManager() {
         </div>
 
         <div className="lg:col-span-8">
-          <Card className="border-slate-200 shadow-sm h-full">
+          <Card
+            className="border-slate-200 shadow-sm h-full"
+            role="tabpanel"
+            aria-labelledby={`taxonomy-tab-${activeTab}`}
+            id={tabPanelId}
+          >
             <div className="bg-white px-6 py-4 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10 rounded-t-xl">
               <div className="flex items-baseline gap-2">
                 <CardTitle className="text-lg text-slate-800">{t('common.listTitle')}</CardTitle>
