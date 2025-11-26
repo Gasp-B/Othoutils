@@ -20,7 +20,7 @@ import type {
 
 const taxonomyQueryKey = (locale: Locale) => ['test-taxonomy', locale] as const;
 
-type Tab = 'domains' | 'tags' | 'pathologies';
+type Tab = 'pathologies' | 'domains' | 'tags';
 
 // Definition of an item to avoid "any" in the list map
 type TaxonomyListItem = {
@@ -37,7 +37,8 @@ export default function TaxonomyManager() {
   const queryClient = useQueryClient();
   const locale = useLocale() as Locale;
 
-  const [activeTab, setActiveTab] = useState<Tab>('domains');
+  // Par défaut sur 'pathologies' comme demandé en premier
+  const [activeTab, setActiveTab] = useState<Tab>('pathologies');
 
   // Form States
   const [labelInput, setLabelInput] = useState('');
@@ -152,7 +153,6 @@ export default function TaxonomyManager() {
   // --- Lists ---
   const activeList = useMemo<TaxonomyListItem[]>(() => {
     if (!data) return [];
-    // Narrowing the type from the union in TaxonomyResponse
     const list = (data[activeTab] ?? []) as TaxonomyListItem[];
     return [...list].sort((a, b) => a.label.localeCompare(b.label));
   }, [data, activeTab]);
@@ -171,43 +171,49 @@ export default function TaxonomyManager() {
 
       {errorMessage && <div className={`error-text ${styles.fullWidthError}`}>{errorMessage}</div>}
 
-      {/* NAVIGATION TABS */}
-      <div className="flex gap-2 mb-2 overflow-x-auto pb-2 border-b border-slate-200 w-full col-span-2">
-        <button
-          type="button"
-          onClick={() => setActiveTab('domains')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-            activeTab === 'domains'
-              ? 'bg-sky-100 text-sky-800'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          {t('domains.toolbarTitle')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('tags')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-            activeTab === 'tags' ? 'bg-sky-100 text-sky-800' : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          {t('tags.toolbarTitle')}
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('pathologies')}
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-            activeTab === 'pathologies'
-              ? 'bg-sky-100 text-sky-800'
-              : 'text-slate-600 hover:bg-slate-100'
-          }`}
-        >
-          {t('pathologies.toolbarTitle')}
-        </button>
+      {/* NAVIGATION TABS (CENTRÉ & STYLISÉ) */}
+      <div className="col-span-1 md:col-span-2 flex justify-center mb-4">
+        <div className="inline-flex p-1.5 bg-slate-100/80 rounded-xl gap-1 shadow-inner border border-slate-200/60">
+          <button
+            type="button"
+            onClick={() => setActiveTab('pathologies')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === 'pathologies'
+                ? 'bg-white text-sky-700 shadow-sm ring-1 ring-black/5'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+            }`}
+          >
+            {t('pathologies.toolbarTitle')}
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setActiveTab('domains')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === 'domains'
+                ? 'bg-white text-sky-700 shadow-sm ring-1 ring-black/5'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+            }`}
+          >
+            {t('domains.toolbarTitle')}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('tags')}
+            className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${
+              activeTab === 'tags'
+                ? 'bg-white text-sky-700 shadow-sm ring-1 ring-black/5'
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+            }`}
+          >
+            {t('tags.toolbarTitle')}
+          </button>
+        </div>
       </div>
 
-      {/* FORMULAIRE CRÉATION */}
-      <Card>
+      {/* FORMULAIRE CRÉATION (GAUCHE) */}
+      <Card className="h-fit">
         <CardHeader>
           <CardTitle>{t(`${activeTab}.cardTitle`)}</CardTitle>
           <p className="text-sm text-slate-500">{t(`${activeTab}.cardHelper`)}</p>
@@ -274,12 +280,14 @@ export default function TaxonomyManager() {
         </CardContent>
       </Card>
 
-      {/* LISTE EXISTANTE */}
-      <Card>
+      {/* LISTE EXISTANTE (DROITE) */}
+      <Card className="h-fit min-h-[300px]">
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>{t('common.listTitle')}</CardTitle>
-            <Badge variant="secondary">{activeList.length}</Badge>
+            <Badge variant="secondary" className="px-2.5 py-0.5 text-sm">
+              {activeList.length}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent>
@@ -290,36 +298,46 @@ export default function TaxonomyManager() {
           ) : activeList.length === 0 ? (
             <p className="text-sm text-slate-400 italic">{t('common.empty')}</p>
           ) : (
-            <ul className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+            // Ajout de list-none et pl-0 pour corriger l'alignement des puces
+            <ul className="list-none pl-0 divide-y divide-slate-100 max-h-[600px] overflow-y-auto pr-1">
               {activeList.map((item) => (
-                <li key={item.id} className="py-3 flex justify-between items-start gap-3 group">
+                <li key={item.id} className="py-3 flex justify-between items-start gap-3 group first:pt-0">
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-slate-800 truncate">{item.label}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-slate-800 truncate">{item.label}</p>
+                      {activeTab === 'tags' && item.color && (
+                        <span 
+                          className="block w-2.5 h-2.5 rounded-full ring-1 ring-slate-200" 
+                          style={{ backgroundColor: item.color }} 
+                          title={item.color}
+                        />
+                      )}
+                    </div>
+                    
                     {activeTab === 'pathologies' && (
                       <>
                         {item.description && (
-                          <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
                             {item.description}
                           </p>
                         )}
                         {item.synonyms && item.synonyms.length > 0 && (
-                          <p className="text-xs text-slate-400 mt-1">
-                            Alias: {item.synonyms.join(', ')}
-                          </p>
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {item.synonyms.map((syn, idx) => (
+                              <span key={idx} className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600">
+                                {syn}
+                              </span>
+                            ))}
+                          </div>
                         )}
                       </>
-                    )}
-                    {activeTab === 'tags' && item.color && (
-                      <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-500">
-                        {item.color}
-                      </span>
                     )}
                   </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
+                    className="opacity-0 group-hover:opacity-100 transition-all text-slate-400 hover:text-red-600 hover:bg-red-50 h-8 w-8 p-0"
                     onClick={() =>
                       deleteMutation.mutate({
                         type:
@@ -333,6 +351,7 @@ export default function TaxonomyManager() {
                       })
                     }
                     disabled={deleteMutation.isPending && deletingId === item.id}
+                    aria-label={t('buttons.delete')}
                   >
                     {deleteMutation.isPending && deletingId === item.id ? '...' : '×'}
                   </Button>
