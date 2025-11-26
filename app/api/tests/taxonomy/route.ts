@@ -1,5 +1,6 @@
+
 import { NextRequest, NextResponse } from 'next/server';
-import { inArray } from 'drizzle-orm';
+import { inArray, eq, and } from 'drizzle-orm';
 import { defaultLocale, locales, type Locale } from '@/i18n/routing';
 import { getDb } from '@/lib/db/client';
 import {
@@ -24,12 +25,11 @@ import {
   deletePathology,
 } from '@/lib/tests/taxonomy';
 
-// Utility types to avoid "any" in Maps
+// Types helpers
 type DomainTranslationRow = typeof domainsTranslations.$inferSelect;
 type TagTranslationRow = typeof tagsTranslations.$inferSelect;
 type PathologyTranslationRow = typeof pathologyTranslations.$inferSelect;
 
-// Generic helper to resolve locale with fallback
 function resolveTranslation<T extends { locale: string }>(
   id: string,
   map: Map<string, T[]>,
@@ -50,24 +50,15 @@ export async function GET(request: NextRequest) {
 
     const [domainRows, tagRows, pathologyRows, allDomains, allTags, allPathologies] =
       await Promise.all([
-        db
-          .select()
-          .from(domainsTranslations)
-          .where(inArray(domainsTranslations.locale, [locale, defaultLocale])),
-        db
-          .select()
-          .from(tagsTranslations)
-          .where(inArray(tagsTranslations.locale, [locale, defaultLocale])),
-        db
-          .select()
-          .from(pathologyTranslations)
-          .where(inArray(pathologyTranslations.locale, [locale, defaultLocale])),
+        db.select().from(domainsTranslations).where(inArray(domainsTranslations.locale, [locale, defaultLocale])),
+        db.select().from(tagsTranslations).where(inArray(tagsTranslations.locale, [locale, defaultLocale])),
+        db.select().from(pathologyTranslations).where(inArray(pathologyTranslations.locale, [locale, defaultLocale])),
         db.select().from(domains),
         db.select().from(tags),
         db.select().from(pathologies),
       ]);
 
-    // 1. Map Domains
+    // Mapping
     const domainsById = new Map<string, DomainTranslationRow[]>();
     for (const r of domainRows) {
       const list = domainsById.get(r.domainId) ?? [];
@@ -75,7 +66,6 @@ export async function GET(request: NextRequest) {
       domainsById.set(r.domainId, list);
     }
 
-    // 2. Map Tags
     const tagsById = new Map<string, TagTranslationRow[]>();
     for (const r of tagRows) {
       const list = tagsById.get(r.tagId) ?? [];
@@ -83,7 +73,6 @@ export async function GET(request: NextRequest) {
       tagsById.set(r.tagId, list);
     }
 
-    // 3. Map Pathologies
     const pathologiesById = new Map<string, PathologyTranslationRow[]>();
     for (const r of pathologyRows) {
       const list = pathologiesById.get(r.pathologyId) ?? [];
@@ -91,7 +80,7 @@ export async function GET(request: NextRequest) {
       pathologiesById.set(r.pathologyId, list);
     }
 
-    // Transformation
+    // Build Response
     const localizedDomains = allDomains
       .map((d) => {
         const t = resolveTranslation(d.id, domainsById, locale, defaultLocale);
@@ -173,6 +162,68 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// NOUVEAU: Gestion de l'update via PUT
+export async function PUT(request: NextRequest) {
+  try {
+    const json = await request.json();
+    // On suppose que l'ID est passé dans le corps
+    const { id, ...rest } = json; 
+    
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json({ error: 'ID requis pour la mise à jour' }, { status: 400 });
+    }
+    
+    const entityId = id;
+    const payload = taxonomyMutationSchema.parse(rest);
+    const locale = payload.locale ?? defaultLocale;
+    const db = getDb();
+
+    if (payload.type === 'pathology') {
+      const synonymsArray = payload.synonyms 
+        ? payload.synonyms.split(',').map(s => s.trim()).filter(Boolean) 
+        : [];
+      
+      // Update translation
+      await db.update(pathologyTranslations)
+        .set({ 
+          label: payload.value, 
+          description: payload.description ?? null, 
+          synonyms: synonymsArray 
+        })
+        .where(and(eq(pathologyTranslations.pathologyId, entityId), eq(pathologyTranslations.locale, locale)));
+        
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+
+    if (payload.type === 'tag') {
+      // Update parent color
+      if (payload.color !== undefined) {
+        await db.update(tags).set({ colorLabel: payload.color }).where(eq(tags.id, entityId));
+      }
+      // Update translation
+      await db.update(tagsTranslations)
+        .set({ label: payload.value })
+        .where(and(eq(tagsTranslations.tagId, entityId), eq(tagsTranslations.locale, locale)));
+
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+
+    if (payload.type === 'domain') {
+      // Update translation (slug should ideally be regenerated but skipped for simplicity here)
+      await db.update(domainsTranslations)
+        .set({ label: payload.value })
+        .where(and(eq(domainsTranslations.domainId, entityId), eq(domainsTranslations.locale, locale)));
+
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+
+    return NextResponse.json({ error: 'Type invalide' }, { status: 400 });
+  } catch (error) {
+    console.error('Update taxonomy error', error);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+
 export async function DELETE(request: NextRequest) {
   try {
     const payload = taxonomyDeletionSchema.parse(await request.json());
@@ -186,7 +237,6 @@ export async function DELETE(request: NextRequest) {
     if (!deleted) return NextResponse.json({ error: 'Introuvable' }, { status: 404 });
     return NextResponse.json({ deleted }, { status: 200 });
   } catch {
-    // 'error' variable was unused in the original code reported by eslint
     return NextResponse.json({ error: 'Erreur suppression' }, { status: 400 });
   }
 }
