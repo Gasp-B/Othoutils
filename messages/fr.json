@@ -47,14 +47,15 @@
     },
     "Referentials": {
         "sectionLabel": "Référentiels structurés",
-        "loading": "Chargement des référentiels depuis Supabase…",
+        "loading": "Chargement des domaines du catalogue…",
         "errorTitle": "Impossible de récupérer les référentiels",
-        "errorSubtitle": "Vérifiez la connexion ou rechargez la page. La requête passe par Supabase avec RLS activé.",
+        "errorSubtitle": "Vérifiez votre connexion ou rechargez la page. Les données proviennent du catalogue des tests.",
         "errors": {
             "load": "Erreur lors du chargement des référentiels"
         },
-        "emptySubsections": "Aucune sous-catégorie associée pour le moment.",
-        "emptyState": "Aucun référentiel n'est disponible pour le moment. Vérifiez que les données sont bien présentes dans Supabase."
+        "emptySubsections": "Aucun test n'est encore associé à ce domaine.",
+        "emptyState": "Aucun test n'est disponible pour le moment. Ajoutez des entrées dans Supabase pour alimenter le catalogue.",
+        "fallbackDomain": "Autres tests"
     },
     "Tools": {
         "sectionLabel": "Référentiel des tests",

@@ -1,41 +1,41 @@
-'use client';
-
-import { useQuery } from '@tanstack/react-query';
-import { useTranslations, useLocale } from 'next-intl';
-import { referentialsResponseSchema, type ReferentialDto } from '@/lib/validation/referentials';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { type Locale } from '@/i18n/routing';
+import { getTestsWithMetadata } from '@/lib/tests/queries';
+import type { TestDto } from '@/lib/validation/tests';
 import styles from './referentials-section.module.css';
 
-function ReferentialsSection() {
-  const t = useTranslations('Referentials');
-  const shared = useTranslations('Shared');
-  const locale = useLocale();
+function groupTestsByDomain(tests: TestDto[], fallbackDomain: string) {
+  const grouped = new Map<string, TestDto[]>();
 
-  const { data: referentials = [], isLoading, isError, refetch } = useQuery<ReferentialDto[]>({
-    queryKey: ['referentials', locale],
-    queryFn: async () => {
-      const response = await fetch(`/api/referentials?locale=${locale}`, { cache: 'no-store' });
+  for (const test of tests) {
+    const domainLabels = test.domains.length > 0 ? test.domains : [fallbackDomain];
 
-      if (!response.ok) {
-        let errorMessage = t('errors.load');
+    for (const domainLabel of domainLabels) {
+      const existing = grouped.get(domainLabel) ?? [];
+      grouped.set(domainLabel, [...existing, test]);
+    }
+  }
 
-        try {
-          const payload = (await response.json()) as { error?: unknown };
-          if (typeof payload.error === 'string') {
-            errorMessage = payload.error;
-          }
-        } catch {
-          // Ignore parsing issues and keep the localized message
-        }
+  return Array.from(grouped.entries()).sort(([domainA], [domainB]) => domainA.localeCompare(domainB));
+}
 
-        throw new Error(String(errorMessage));
-      }
+async function ReferentialsSection() {
+  const t = await getTranslations('Referentials');
+  const shared = await getTranslations('Shared');
+  const locale = (await getLocale()) as Locale;
 
-      const data = (await response.json()) as unknown;
-      return referentialsResponseSchema.parse(data).referentials;
-    },
-    staleTime: 1000 * 60,
-    retry: false,
-  });
+  let tests: TestDto[] = [];
+  let loadError: string | null = null;
+
+  try {
+    tests = await getTestsWithMetadata(locale);
+  } catch (error) {
+    console.error('Failed to fetch referentials from tests catalog', error);
+    loadError = t('errors.load');
+  }
+
+  const fallbackDomain = t('fallbackDomain');
+  const domainsWithTests = groupTestsByDomain(tests, fallbackDomain);
 
   return (
     <section id="referentiels" className="container section-shell">
@@ -44,52 +44,39 @@ function ReferentialsSection() {
         <p className={styles.sectionLabel}>{t('sectionLabel')}</p>
       </div>
 
-      {isLoading && <p className="text-subtle">{t('loading')}</p>}
-
-      {isError && (
+      {loadError && (
         <div className={`glass panel ${styles.errorPanel}`}>
           <div>
             <p className={styles.errorTitle}>{t('errorTitle')}</p>
-            <p className={`text-subtle ${styles.errorSubtitle}`}>{t('errorSubtitle')}</p>
+            <p className={`text-subtle ${styles.errorSubtitle}`}>{loadError}</p>
           </div>
-          <button className="secondary-btn" type="button" onClick={() => void refetch()}>
-            {shared('ctas.retry')}
-          </button>
         </div>
       )}
 
       <div className="card-grid">
-        {referentials.map((referential) => (
-          <article key={referential.id} className={`glass panel panel-muted ${styles.referentialCard}`}>
+        {domainsWithTests.map(([domainLabel, domainTests]) => (
+          <article key={domainLabel} className={`glass panel panel-muted ${styles.referentialCard}`}>
             <div className={styles.referentialHeader}>
               <div>
-                <p className={styles.cardTitle}>{referential.name}</p>
-                {referential.description && (
-                  <p className={`text-subtle ${styles.cardSubtitle}`}>
-                    {referential.description}
-                  </p>
-                )}
+                <p className={styles.cardTitle}>{domainLabel}</p>
               </div>
               <span className="badge validated">{shared('statuses.referential')}</span>
             </div>
 
             <div className={`tag-row ${styles.subsectionRow}`}>
-              {referential.subsections.map((subsection) => (
-                <span key={subsection.id} className={`tag ${styles.subsectionTag}`}>
-                  {subsection.name}
+              {domainTests.map((test) => (
+                <span key={test.id} className={`tag ${styles.subsectionTag}`}>
+                  {test.name}
                 </span>
               ))}
-              {referential.subsections.length === 0 && (
-                <span className="text-subtle">{t('emptySubsections')}</span>
-              )}
             </div>
 
-            {referential.subsections.some((subsection) => subsection.tags.length > 0) && (
+            {domainTests.some((test) => test.tags.length > 0) && (
               <div className={`tag-row ${styles.tagRowTight}`}>
-                {referential.subsections.flatMap((subsection) =>
-                  subsection.tags.map((tag) => (
-                    <span key={`${subsection.id}-${tag.id}`} className={`tag ${styles.lightTag}`}>
-                      #{tag.name}
+                {domainTests.flatMap((test) =>
+                  test.tags.map((tag) => (
+                    <span key={`${test.id}-${tag}`} className={`tag ${styles.lightTag}`}>
+                      #{tag}
                     </span>
                   )),
                 )}
@@ -99,7 +86,7 @@ function ReferentialsSection() {
         ))}
       </div>
 
-      {!isLoading && !isError && referentials.length === 0 && (
+      {domainsWithTests.length === 0 && (
         <p className={`text-subtle ${styles.emptyState}`}>
           {t('emptyState')}
         </p>

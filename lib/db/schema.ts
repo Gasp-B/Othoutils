@@ -19,75 +19,6 @@ export const authUsers = auth.table('users', {
   id: uuid('id').primaryKey(),
 });
 
-export const sections = pgTable('sections', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const sectionsTranslations = pgTable(
-  'sections_translations',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    sectionId: uuid('section_id')
-      .notNull()
-      .references(() => sections.id, { onDelete: 'cascade' }),
-    locale: text('locale').notNull(),
-    label: text('label').notNull(),
-    description: text('description'),
-  },
-  (table) => ({
-    localeConstraint: uniqueIndex('sections_translations_section_id_locale_key').on(table.sectionId, table.locale),
-  }),
-);
-
-export const subsections = pgTable('subsections', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  formatLabel: text('format_label'),
-  colorLabel: text('color_label'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
-export const subsectionsTranslations = pgTable(
-  'subsections_translations',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    subsectionId: uuid('subsection_id')
-      .notNull()
-      .references(() => subsections.id, { onDelete: 'cascade' }),
-    locale: text('locale').notNull(),
-    label: text('label').notNull(),
-    formatLabel: text('format_label'),
-    colorLabel: text('color_label'),
-    notes: text('notes'),
-  },
-  (table) => ({
-    localeConstraint: uniqueIndex('subsections_translations_subsection_id_locale_key').on(
-      table.subsectionId,
-      table.locale,
-    ),
-  }),
-);
-
-export const sectionSubsections = pgTable(
-  'section_subsections',
-  {
-    sectionId: uuid('section_id')
-      .notNull()
-      .references(() => sections.id, { onDelete: 'cascade' }),
-    subsectionId: uuid('subsection_id')
-      .notNull()
-      .references(() => subsections.id, { onDelete: 'cascade' }),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.sectionId, table.subsectionId] }),
-  }),
-);
-
 export const tags = pgTable('tags', {
   id: uuid('id').defaultRandom().primaryKey(),
   colorLabel: text('color_label'),
@@ -106,21 +37,6 @@ export const tagsTranslations = pgTable(
   },
   (table) => ({
     localeConstraint: uniqueIndex('tags_translations_tag_id_locale_key').on(table.tagId, table.locale),
-  }),
-);
-
-export const subsectionTags = pgTable(
-  'subsection_tags',
-  {
-    subsectionId: uuid('subsection_id')
-      .notNull()
-      .references(() => subsections.id, { onDelete: 'cascade' }),
-    tagId: uuid('tag_id')
-      .notNull()
-      .references(() => tags.id, { onDelete: 'cascade' }),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.subsectionId, table.tagId] }),
   }),
 );
 
