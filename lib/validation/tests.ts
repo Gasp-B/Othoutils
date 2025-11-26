@@ -1,3 +1,7 @@
+{
+type: uploaded file
+fileName: gasp-b/orthoutils/Orthoutils-e4995abbd2fb224979e887f8259e243181cf18bd/lib/validation/tests.ts
+fullContent:
 import { z } from 'zod';
 
 import { defaultLocale, locales } from '@/i18n/routing';
@@ -79,25 +83,38 @@ export const taxonomyResponseSchema = z.object({
     z.object({
       id: z.string().uuid(),
       label: z.string(),
+      color: z.string().nullable().optional(),
+    }),
+  ),
+  pathologies: z.array(
+    z.object({
+      id: z.string().uuid(),
+      label: z.string(),
+      slug: z.string(),
+      description: z.string().nullable(),
+      synonyms: z.array(z.string()),
     }),
   ),
 });
 
-export type TestInput = z.infer<typeof testInputSchema>;
-export type TestUpdateInput = z.infer<typeof updateTestInputSchema>;
 export type TaxonomyResponse = z.infer<typeof taxonomyResponseSchema>;
 
 export const taxonomyMutationSchema = z.object({
-  type: z.enum(['domain', 'tag']),
+  type: z.enum(['domain', 'tag', 'pathology']),
   locale: localeEnum.default(defaultLocale),
-  value: z.string().trim().min(1, { message: 'La valeur fournie est vide.' }),
+  value: z.string().trim().min(1, { message: 'La valeur est requise.' }),
+  // Champs additionnels optionnels
+  description: z.string().nullable().optional(),
+  synonyms: z.string().optional(), // Reçu comme string "a, b, c" depuis le form
+  color: z.string().nullable().optional(),
 });
 
 export const taxonomyDeletionSchema = z.object({
-  type: z.enum(['domain', 'tag']),
+  type: z.enum(['domain', 'tag', 'pathology']),
   id: z.string().uuid(),
   locale: localeEnum.default(defaultLocale),
 });
 
 export type TaxonomyMutationInput = z.infer<typeof taxonomyMutationSchema>;
 export type TaxonomyDeletionInput = z.infer<typeof taxonomyDeletionSchema>;
+}

@@ -8,8 +8,9 @@ import { type Locale } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
 import styles from './taxonomy-manager.module.css';
 import type {
   TaxonomyDeletionInput,
@@ -18,419 +19,329 @@ import type {
 } from '@/lib/validation/tests';
 
 const taxonomyQueryKey = (locale: Locale) => ['test-taxonomy', locale] as const;
-const REQUEST_TIMEOUT_MS = 10_000;
 
-function TaxonomyManager() {
+type Tab = 'domains' | 'tags' | 'pathologies';
+
+// Definition of an item to avoid "any" in the list map
+type TaxonomyListItem = {
+  id: string;
+  label: string;
+  slug?: string;
+  color?: string | null;
+  description?: string | null;
+  synonyms?: string[];
+};
+
+export default function TaxonomyManager() {
   const t = useTranslations('taxonomy');
   const queryClient = useQueryClient();
   const locale = useLocale() as Locale;
 
-  const [domainInput, setDomainInput] = useState('');
-  const [tagInput, setTagInput] = useState('');
+  const [activeTab, setActiveTab] = useState<Tab>('domains');
+
+  // Form States
+  const [labelInput, setLabelInput] = useState('');
+  const [descInput, setDescInput] = useState('');
+  const [synonymsInput, setSynonymsInput] = useState('');
+  const [colorInput, setColorInput] = useState('');
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const normalizedDomainInput = domainInput.trim();
-  const normalizedTagInput = tagInput.trim();
-
   useEffect(() => {
     return () => {
-      if (toastTimeoutRef.current) {
-        clearTimeout(toastTimeoutRef.current);
-      }
+      if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     };
   }, []);
 
   const showToast = (message: string) => {
     setToastMessage(message);
-    if (toastTimeoutRef.current) {
-      clearTimeout(toastTimeoutRef.current);
-    }
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
     toastTimeoutRef.current = setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const fetchWithTimeout = async (
-    input: RequestInfo | URL,
-    init: RequestInit | undefined,
-    timeoutMessage: string,
-  ) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
-    try {
-      return await fetch(input, { ...init, signal: controller.signal });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        throw new Error(timeoutMessage);
-      }
-
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  };
-
-  const fetchTaxonomy = async (): Promise<TaxonomyResponse> => {
-    const response = await fetchWithTimeout(
-      `/api/tests/taxonomy?locale=${locale}`,
-      { cache: 'no-store' },
-      t('errors.timeout'),
-    );
-
-    if (!response.ok) {
-      throw new Error(t('errors.fetchTaxonomy'));
-    }
-
-    return (await response.json()) as TaxonomyResponse;
-  };
-
-  const createTaxonomyItem = async (payload: TaxonomyMutationInput) => {
-    const response = await fetchWithTimeout(
-      '/api/tests/taxonomy',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, locale }),
-      },
-      t('errors.timeout'),
-    );
-
-    if (!response.ok) {
-      const json = (await response.json().catch(() => ({}))) as { error?: string };
-      throw new Error(json.error ?? t('errors.createGeneric'));
-    }
-
-    return response.json();
-  };
-
-  const deleteTaxonomyItem = async (payload: TaxonomyDeletionInput) => {
-    const response = await fetchWithTimeout(
-      '/api/tests/taxonomy',
-      {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      },
-      t('errors.timeout'),
-    );
-
-    if (!response.ok) {
-      const json = (await response.json().catch(() => ({}))) as { error?: string };
-      throw new Error(json.error ?? t('errors.deleteGeneric'));
-    }
-
-    return response.json();
-  };
-
-  const {
-    data,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
+  // --- Data Fetching ---
+  const { data, isLoading, isError } = useQuery({
     queryKey: taxonomyQueryKey(locale),
-    queryFn: fetchTaxonomy,
+    queryFn: async () => {
+      const res = await fetch(`/api/tests/taxonomy?locale=${locale}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(t('errors.fetchTaxonomy'));
+      return (await res.json()) as TaxonomyResponse;
+    },
   });
 
+  // --- Mutations ---
   const createMutation = useMutation({
-    mutationFn: createTaxonomyItem,
+    mutationFn: async (payload: TaxonomyMutationInput) => {
+      const res = await fetch('/api/tests/taxonomy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(json.error || t('errors.createGeneric'));
+      }
+      return res.json();
+    },
     onSuccess: (_, variables) => {
       void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey(locale) });
-      showToast(
-        variables.type === 'domain'
-          ? t('toast.domainCreated')
-          : t('toast.tagCreated'),
-      );
+
+      const toastKeys = {
+        domain: 'toast.domainCreated',
+        tag: 'toast.tagCreated',
+        pathology: 'toast.pathologyCreated',
+      } as const;
+
+      const msg = t(toastKeys[variables.type]);
+      showToast(msg);
+
+      setLabelInput('');
+      setDescInput('');
+      setSynonymsInput('');
+      setColorInput('');
       setErrorMessage(null);
-      if (variables.type === 'domain') {
-        setDomainInput('');
-      }
-      if (variables.type === 'tag') {
-        setTagInput('');
-      }
     },
-    onError: (mutationError) => {
-      const message =
-        mutationError instanceof Error
-          ? mutationError.message
-          : t('errors.finalizeCreation');
-      setErrorMessage(message);
-    },
+    onError: (err) => setErrorMessage(err instanceof Error ? err.message : t('errors.unknown')),
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteTaxonomyItem,
-    onMutate: (variables) => {
-      setDeletingId(variables.id);
+    mutationFn: async (payload: TaxonomyDeletionInput) => {
+      const res = await fetch('/api/tests/taxonomy', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error(t('errors.deleteGeneric'));
+      return res.json();
     },
+    onMutate: (vars) => setDeletingId(vars.id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: taxonomyQueryKey(locale) });
       showToast(t('toast.itemDeleted'));
-      setErrorMessage(null);
       setDeletingId(null);
     },
-    onError: (mutationError) => {
-      const message =
-        mutationError instanceof Error
-          ? mutationError.message
-          : t('errors.deleteGeneric');
-      setErrorMessage(message);
+    onError: (err) => {
+      setErrorMessage(err instanceof Error ? err.message : t('errors.unknown'));
       setDeletingId(null);
     },
   });
 
-  const sortedDomains = useMemo(
-    () => [...(data?.domains ?? [])].sort((a, b) => a.label.localeCompare(b.label)),
-    [data?.domains],
-  );
+  const handleCreate = () => {
+    if (!labelInput.trim()) return;
 
-  const sortedTags = useMemo(
-    () => [...(data?.tags ?? [])].sort((a, b) => a.label.localeCompare(b.label)),
-    [data?.tags],
-  );
+    const payload: TaxonomyMutationInput = {
+      type: activeTab === 'domains' ? 'domain' : activeTab === 'tags' ? 'tag' : 'pathology',
+      locale,
+      value: labelInput,
+    };
 
-  const domainExists = useMemo(
-    () =>
-      sortedDomains.some(
-        (domain) =>
-          domain.label.trim().toLowerCase() === normalizedDomainInput.toLowerCase(),
-      ),
-    [normalizedDomainInput, sortedDomains],
-  );
+    if (activeTab === 'pathologies') {
+      payload.description = descInput;
+      payload.synonyms = synonymsInput;
+    }
+    if (activeTab === 'tags') {
+      payload.color = colorInput;
+    }
 
-  const tagExists = useMemo(
-    () =>
-      sortedTags.some(
-        (tag) => tag.label.trim().toLowerCase() === normalizedTagInput.toLowerCase(),
-      ),
-    [normalizedTagInput, sortedTags],
+    createMutation.mutate(payload);
+  };
+
+  // --- Lists ---
+  const activeList = useMemo<TaxonomyListItem[]>(() => {
+    if (!data) return [];
+    // Narrowing the type from the union in TaxonomyResponse
+    const list = (data[activeTab] ?? []) as TaxonomyListItem[];
+    return [...list].sort((a, b) => a.label.localeCompare(b.label));
+  }, [data, activeTab]);
+
+  const alreadyExists = activeList.some(
+    (item) => item.label.toLowerCase() === labelInput.trim().toLowerCase(),
   );
 
   return (
     <div className="content-grid">
       {toastMessage && (
-        <div role="status" aria-live="polite" className={styles.toast}>
+        <div role="status" className={styles.toast}>
           {toastMessage}
         </div>
       )}
 
-      {errorMessage && (
-        <p className={`error-text ${styles.fullWidthError}`} role="alert">
-          {errorMessage}
-        </p>
-      )}
+      {errorMessage && <div className={`error-text ${styles.fullWidthError}`}>{errorMessage}</div>}
 
+      {/* NAVIGATION TABS */}
+      <div className="flex gap-2 mb-2 overflow-x-auto pb-2 border-b border-slate-200 w-full col-span-2">
+        <button
+          type="button"
+          onClick={() => setActiveTab('domains')}
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            activeTab === 'domains'
+              ? 'bg-sky-100 text-sky-800'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          {t('domains.toolbarTitle')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('tags')}
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            activeTab === 'tags' ? 'bg-sky-100 text-sky-800' : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          {t('tags.toolbarTitle')}
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('pathologies')}
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+            activeTab === 'pathologies'
+              ? 'bg-sky-100 text-sky-800'
+              : 'text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          {t('pathologies.toolbarTitle')}
+        </button>
+      </div>
+
+      {/* FORMULAIRE CRÉATION */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('domains.cardTitle')}</CardTitle>
-          <p className={`helper-text ${styles.helperTight}`}>
-            {t('domains.cardHelper')}
-          </p>
+          <CardTitle>{t(`${activeTab}.cardTitle`)}</CardTitle>
+          <p className="text-sm text-slate-500">{t(`${activeTab}.cardHelper`)}</p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="notion-toolbar">
-              <div>
-                <p className={styles.toolbarTitle}>{t('domains.toolbarTitle')}</p>
-                <p className={`helper-text ${styles.helperTight}`}>
-                  {t('domains.count', { count: sortedDomains.length })}
-                </p>
-              </div>
+          <div>
+            <Label htmlFor="label">{t(`${activeTab}.label`)}</Label>
+            <Input
+              id="label"
+              value={labelInput}
+              onChange={(e) => setLabelInput(e.target.value)}
+              placeholder={t(`${activeTab}.placeholder`)}
+            />
+            {alreadyExists && (
+              <p className="text-red-500 text-sm mt-1">{t(`${activeTab}.exists`)}</p>
+            )}
+          </div>
+
+          {activeTab === 'tags' && (
+            <div>
+              <Label htmlFor="color">{t('tags.colorLabel')}</Label>
+              <Input
+                id="color"
+                value={colorInput}
+                onChange={(e) => setColorInput(e.target.value)}
+                placeholder="Ex. Rouge, #FF0000"
+              />
             </div>
-            <Separator />
-            {isLoading && (
-              <p className="helper-text">{t('domains.loading')}</p>
-            )}
-            {isError && (
-              <p className="error-text">
-                {error instanceof Error ? error.message : t('errors.unknown')}
-              </p>
-            )}
-            {!isLoading && !isError && (
-              <div className="space-y-2">
-                {sortedDomains.length === 0 && (
-                  <p className="helper-text">{t('domains.empty')}</p>
-                )}
-                {sortedDomains.map((domain) => (
-                  <div
-                    key={domain.id}
-                    className={`notion-toolbar__group ${styles.toolbarGroupJustify}`}
-                  >
-                    <span>{domain.label}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t('domains.actions.deleteAria', {
-                        label: domain.label,
-                      })}
-                      onClick={() =>
-                        deleteMutation.mutate({ type: 'domain', id: domain.id, locale })
-                      }
-                      disabled={
-                        deleteMutation.isPending && deletingId === domain.id
-                      }
-                    >
-                      {deleteMutation.isPending && deletingId === domain.id
-                        ? t('buttons.deletePending')
-                        : t('buttons.delete')}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
-          <Label htmlFor="new-domain">{t('domains.label')}</Label>
-          <Input
-            id="new-domain"
-            placeholder={t('domains.placeholder')}
-            value={domainInput}
-            onChange={(event) => setDomainInput(event.target.value)}
-            disabled={createMutation.isPending}
-          />
-          {domainExists && (
-            <p className={`error-text ${styles.helperTight}`}>
-              {t('domains.exists')}
-            </p>
           )}
-          <div className="notion-toolbar__group">
-            <Button
-              type="button"
-              onClick={() =>
-                createMutation.mutate({
-                  type: 'domain',
-                  value: normalizedDomainInput,
-                  locale,
-                })
-              }
-              disabled={
-                !normalizedDomainInput || createMutation.isPending || domainExists
-              }
-            >
-              {createMutation.isPending
-                ? t('buttons.savePending')
-                : t('buttons.addDomain')}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setDomainInput('')}
-            >
-              {t('buttons.reset')}
-            </Button>
-          </div>
+
+          {activeTab === 'pathologies' && (
+            <>
+              <div>
+                <Label htmlFor="desc">{t('pathologies.descLabel')}</Label>
+                <Textarea
+                  id="desc"
+                  value={descInput}
+                  onChange={(e) => setDescInput(e.target.value)}
+                  placeholder={t('pathologies.descPlaceholder')}
+                  className="min-h-[80px]"
+                />
+              </div>
+              <div>
+                <Label htmlFor="synonyms">{t('pathologies.synonymsLabel')}</Label>
+                <Input
+                  id="synonyms"
+                  value={synonymsInput}
+                  onChange={(e) => setSynonymsInput(e.target.value)}
+                  placeholder="Ex. TDAH, Trouble attentionnel"
+                />
+                <p className="text-xs text-slate-400 mt-1">{t('pathologies.synonymsHelper')}</p>
+              </div>
+            </>
+          )}
+
+          <Button
+            type="button"
+            onClick={handleCreate}
+            disabled={!labelInput.trim() || alreadyExists || createMutation.isPending}
+            className="w-full"
+          >
+            {createMutation.isPending ? t('buttons.savePending') : t('buttons.add')}
+          </Button>
         </CardContent>
       </Card>
 
+      {/* LISTE EXISTANTE */}
       <Card>
         <CardHeader>
-          <CardTitle>{t('tags.cardTitle')}</CardTitle>
-          <p className={`helper-text ${styles.helperTight}`}>
-            {t('tags.cardHelper')}
-          </p>
+          <div className="flex justify-between items-center">
+            <CardTitle>{t('common.listTitle')}</CardTitle>
+            <Badge variant="secondary">{activeList.length}</Badge>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="notion-toolbar">
-              <div>
-                <p className={styles.toolbarTitle}>{t('tags.toolbarTitle')}</p>
-                <p className={`helper-text ${styles.helperTight}`}>
-                  {t('tags.count', { count: sortedTags.length })}
-                </p>
-              </div>
-            </div>
-            <Separator />
-            {isLoading && (
-              <p className="helper-text">{t('tags.loading')}</p>
-            )}
-            {isError && (
-              <p className="error-text">
-                {error instanceof Error ? error.message : t('errors.unknown')}
-              </p>
-            )}
-            {!isLoading && !isError && (
-              <div className="space-y-2">
-                {sortedTags.length === 0 && (
-                  <p className="helper-text">{t('tags.empty')}</p>
-                )}
-                {sortedTags.map((tag) => (
-                  <div
-                    key={tag.id}
-                    className={`notion-toolbar__group ${styles.toolbarGroupJustify}`}
-                  >
-                    <span>{tag.label}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      aria-label={t('tags.actions.deleteAria', {
-                        label: tag.label,
-                      })}
-                      onClick={() =>
-                        deleteMutation.mutate({ type: 'tag', id: tag.id, locale })
-                      }
-                      disabled={deleteMutation.isPending && deletingId === tag.id}
-                    >
-                      {deleteMutation.isPending && deletingId === tag.id
-                        ? t('buttons.deletePending')
-                        : t('buttons.delete')}
-                    </Button>
+        <CardContent>
+          {isLoading ? (
+            <p className="text-sm text-slate-500">{t('common.loading')}</p>
+          ) : isError ? (
+            <p className="text-sm text-red-500">{t('errors.unknown')}</p>
+          ) : activeList.length === 0 ? (
+            <p className="text-sm text-slate-400 italic">{t('common.empty')}</p>
+          ) : (
+            <ul className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
+              {activeList.map((item) => (
+                <li key={item.id} className="py-3 flex justify-between items-start gap-3 group">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-slate-800 truncate">{item.label}</p>
+                    {activeTab === 'pathologies' && (
+                      <>
+                        {item.description && (
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">
+                            {item.description}
+                          </p>
+                        )}
+                        {item.synonyms && item.synonyms.length > 0 && (
+                          <p className="text-xs text-slate-400 mt-1">
+                            Alias: {item.synonyms.join(', ')}
+                          </p>
+                        )}
+                      </>
+                    )}
+                    {activeTab === 'tags' && item.color && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-slate-100 rounded text-slate-500">
+                        {item.color}
+                      </span>
+                    )}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <Separator />
-
-          <Label htmlFor="new-tag">{t('tags.label')}</Label>
-          <Input
-            id="new-tag"
-            placeholder={t('tags.placeholder')}
-            value={tagInput}
-            onChange={(event) => setTagInput(event.target.value)}
-            disabled={createMutation.isPending}
-          />
-          {tagExists && (
-            <p className={`error-text ${styles.helperTight}`}>
-              {t('tags.exists')}
-            </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700 hover:bg-red-50"
+                    onClick={() =>
+                      deleteMutation.mutate({
+                        type:
+                          activeTab === 'domains'
+                            ? 'domain'
+                            : activeTab === 'tags'
+                              ? 'tag'
+                              : 'pathology',
+                        id: item.id,
+                        locale,
+                      })
+                    }
+                    disabled={deleteMutation.isPending && deletingId === item.id}
+                  >
+                    {deleteMutation.isPending && deletingId === item.id ? '...' : '×'}
+                  </Button>
+                </li>
+              ))}
+            </ul>
           )}
-          <div className="notion-toolbar__group">
-            <Button
-              type="button"
-              onClick={() =>
-                createMutation.mutate({
-                  type: 'tag',
-                  value: normalizedTagInput,
-                  locale,
-                })
-              }
-              disabled={
-                !normalizedTagInput || createMutation.isPending || tagExists
-              }
-            >
-              {createMutation.isPending
-                ? t('buttons.savePending')
-                : t('buttons.addTag')}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setTagInput('')}
-            >
-              {t('buttons.reset')}
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
-export default TaxonomyManager;
