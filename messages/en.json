@@ -47,14 +47,15 @@
   },
   "Referentials": {
     "sectionLabel": "Structured references",
-    "loading": "Loading references from Supabase…",
+    "loading": "Loading domains from the catalog…",
     "errorTitle": "Unable to retrieve the references",
-    "errorSubtitle": "Check your connection or reload the page. The request goes through Supabase with RLS enabled.",
+    "errorSubtitle": "Check your connection or reload the page. The request pulls domains from the test catalog.",
     "errors": {
       "load": "Error while loading references"
     },
-    "emptySubsections": "No subsections are associated yet.",
-    "emptyState": "No reference is available yet. Check that the data is present in Supabase."
+    "emptySubsections": "No tests are linked to this domain yet.",
+    "emptyState": "No test is available yet. Add entries in Supabase to feed the catalog.",
+    "fallbackDomain": "Other tests"
   },
   "Tools": {
     "sectionLabel": "Test registry",

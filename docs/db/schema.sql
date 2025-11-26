@@ -3,49 +3,6 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 CREATE TYPE validation_status AS ENUM ('draft', 'in_review', 'published', 'archived');
 
-CREATE TABLE sections (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
-  description text,
-  created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
-);
-
-CREATE TABLE sections_translations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  section_id uuid NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
-  locale text NOT NULL,
-  label text NOT NULL,
-  description text,
-  UNIQUE (section_id, locale)
-);
-
-CREATE TABLE subsections (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL UNIQUE,
-  format_label text,
-  color_label text,
-  notes text,
-  created_at timestamptz NOT NULL DEFAULT timezone('utc', now())
-);
-
-CREATE TABLE subsections_translations (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  subsection_id uuid NOT NULL REFERENCES subsections(id) ON DELETE CASCADE,
-  locale text NOT NULL,
-  label text NOT NULL,
-  format_label text,
-  color_label text,
-  notes text,
-  UNIQUE (subsection_id, locale)
-);
-
-CREATE TABLE section_subsections (
-  section_id uuid NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
-  subsection_id uuid NOT NULL REFERENCES subsections(id) ON DELETE CASCADE,
-  created_at timestamptz NOT NULL DEFAULT timezone('utc', now()),
-  PRIMARY KEY (section_id, subsection_id)
-);
-
 -- Catalog of clinical tools and resources.
 CREATE TABLE tools_catalog (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -77,6 +34,7 @@ CREATE TABLE tools_catalog_translations (
 );
 
 ALTER TABLE tools_catalog ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tools_catalog_translations ENABLE ROW LEVEL SECURITY;
 
 -- Community-submitted tools.
 CREATE TABLE tools (
@@ -104,9 +62,6 @@ CREATE TABLE tools_translations (
 );
 
 ALTER TABLE tools ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sections_translations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE subsections_translations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE tools_catalog_translations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tools_translations ENABLE ROW LEVEL SECURITY;
 
 -- Test catalog domain.
