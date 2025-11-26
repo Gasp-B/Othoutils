@@ -803,7 +803,7 @@ export default function TaxonomyManager() {
                   <div className="inline-flex items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 shadow-sm">
                     <Button
                       type="button"
-                      variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                      variant={viewMode === 'table' ? 'default' : 'ghost'}
                       className="h-9 gap-2 rounded-none border-0 px-3 text-slate-700"
                       onClick={() => setViewMode('table')}
                       aria-pressed={viewMode === 'table'}
@@ -814,7 +814,7 @@ export default function TaxonomyManager() {
                     </Button>
                     <Button
                       type="button"
-                      variant={viewMode === 'compact' ? 'secondary' : 'ghost'}
+                      variant={viewMode === 'compact' ? 'default' : 'ghost'}
                       className="h-9 gap-2 rounded-none border-0 px-3 text-slate-700"
                       onClick={() => setViewMode('compact')}
                       aria-pressed={viewMode === 'compact'}
@@ -1040,7 +1040,7 @@ export default function TaxonomyManager() {
                             </div>
                             <div className="flex flex-col gap-2">
                               <Button
-                                variant="secondary"
+                                variant="default"
                                 size="sm"
                                 className="h-8 px-2 text-slate-700"
                                 onClick={() => handleEdit(item)}
