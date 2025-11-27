@@ -500,7 +500,9 @@ export default function TaxonomyManager() {
                   <button
                     key={tab.value}
                     type="button"
-                    ref={(node) => (tabRefs.current[tab.value] = node)}
+                    ref={(node) => {
+                      tabRefs.current[tab.value] = node;
+                    }}
                     role="tab"
                     aria-selected={activeTab === tab.value}
                     aria-controls={tabPanelId}
