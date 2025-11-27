@@ -112,6 +112,7 @@
   display: grid;
   grid-template-columns: 1.1fr 1fr;
   gap: 1rem;
+  align-items: start;
 }
 
 .listCard,
@@ -121,8 +122,14 @@
   border-radius: 16px;
   border: 1px solid var(--border);
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 0.75rem;
+}
+
+.listCard {
+  max-height: 80vh;
+  min-height: 420px;
 }
 
 .cardTitle {
@@ -131,10 +138,25 @@
   color: #0f172a;
 }
 
+.listToolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.searchLabel {
+  font-weight: 600;
+  color: #0f172a;
+}
+
 .list {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  overflow: auto;
+  padding-right: 0.25rem;
 }
 
 .listItem {

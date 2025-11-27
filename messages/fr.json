@@ -563,7 +563,11 @@
       "validationError": "Merci de vérifier les champs indiqués."
     },
     "list": {
-      "title": "Entrées existantes : {type}"
+      "title": "Entrées existantes : {type}",
+      "searchLabel": "Rechercher une entrée",
+      "searchPlaceholder": "Rechercher {type}",
+      "searchAria": "Rechercher dans les entrées de taxonomie",
+      "noResults": "Aucune entrée ne correspond à la recherche."
     },
     "empty": "Aucune entrée {type} pour le moment.",
     "actions": {

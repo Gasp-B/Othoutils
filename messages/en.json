@@ -796,7 +796,11 @@
       "validationError": "Please review the highlighted fields."
     },
     "list": {
-      "title": "Existing {type}"
+      "title": "Existing {type}",
+      "searchLabel": "Search entries",
+      "searchPlaceholder": "Search {type}",
+      "searchAria": "Search taxonomy entries",
+      "noResults": "No matching entries found."
     },
     "empty": "No {type} defined yet.",
     "actions": {

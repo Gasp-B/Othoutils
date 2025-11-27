@@ -49,6 +49,7 @@ export default function TaxonomyManagementPanel() {
   const [activeType, setActiveType] = useState<TaxonomyType>('pathologies');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [formState, setFormState] = useState<FormState>(initialFormState);
+  const [searchTerm, setSearchTerm] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -73,6 +74,7 @@ export default function TaxonomyManagementPanel() {
 
   useEffect(() => {
     resetForm();
+    setSearchTerm('');
   }, [activeType]);
 
   const typeDetails = useMemo(
@@ -102,6 +104,25 @@ export default function TaxonomyManagementPanel() {
     if (activeType === 'domains') return taxonomyQuery.data.domains;
     return taxonomyQuery.data.tags;
   }, [taxonomyQuery.data, activeType]);
+
+  const filteredItems: TaxonomyEntry[] = useMemo(() => {
+    const normalizedTerm = searchTerm.trim().toLowerCase();
+    if (!normalizedTerm) return items;
+
+    return items.filter((item) => {
+      const labelMatch = item.label?.toLowerCase().includes(normalizedTerm);
+      const descriptionMatch =
+        'description' in item && typeof item.description === 'string'
+          ? item.description.toLowerCase().includes(normalizedTerm)
+          : false;
+      const synonymMatch =
+        'synonyms' in item && Array.isArray(item.synonyms)
+          ? item.synonyms.some((synonym) => synonym.toLowerCase().includes(normalizedTerm))
+          : false;
+
+      return labelMatch || descriptionMatch || synonymMatch;
+    });
+  }, [items, searchTerm]);
 
   const saveMutation = useMutation({
     mutationFn: async (input: { id?: string; payload: ReturnType<typeof taxonomyMutationSchema.parse> }) => {
@@ -289,14 +310,31 @@ export default function TaxonomyManagementPanel() {
         <div className={styles.content}>
           <div className={styles.listCard}>
             <h3 className={styles.cardTitle}>{t('list.title', { type: activeCopy.label })}</h3>
+            <div className={styles.listToolbar}>
+              <label className={styles.searchLabel} htmlFor="taxonomy-search">
+                {t('list.searchLabel')}
+              </label>
+              <input
+                id="taxonomy-search"
+                type="search"
+                className={styles.input}
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder={t('list.searchPlaceholder', { type: activeCopy.label })}
+                aria-label={t('list.searchAria')}
+              />
+            </div>
             {taxonomyQuery.isLoading && <p className={styles.headerLead}>{t('messages.loading')}</p>}
             {taxonomyQuery.isError && <p className={styles.headerLead}>{t('messages.loadError')}</p>}
             {!taxonomyQuery.isLoading && items.length === 0 && (
               <p className={styles.headerLead}>{t('empty', { type: activeCopy.label })}</p>
             )}
+            {!taxonomyQuery.isLoading && items.length > 0 && filteredItems.length === 0 && (
+              <p className={styles.headerLead}>{t('list.noResults')}</p>
+            )}
 
             <div className={styles.list}>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <div
                   key={item.id}
                   className={`${styles.listItem} ${selectedId === item.id ? styles.listItemActive : ''}`}
