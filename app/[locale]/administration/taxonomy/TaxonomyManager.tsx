@@ -144,52 +144,6 @@ const CardsIcon = () => (
     <rect width="9" height="13" x="12" y="7" rx="2" />
   </svg>
 );
-const FilterIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="h-4 w-4"
-    aria-hidden
-  >
-    <path d="M4 5h16" />
-    <path d="M7 12h10" />
-    <path d="M10 19h4" />
-  </svg>
-);
-const EmptyIllustration = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 200 160"
-    fill="none"
-    role="img"
-    aria-hidden
-    className="h-24 w-32 text-slate-300"
-  >
-    <rect x="28" y="32" width="144" height="96" rx="12" fill="currentColor" opacity="0.1" />
-    <rect x="44" y="48" width="112" height="64" rx="8" stroke="currentColor" strokeWidth="6" opacity="0.35" />
-    <path
-      d="M64 88h32"
-      stroke="currentColor"
-      strokeWidth="8"
-      strokeLinecap="round"
-      opacity="0.55"
-    />
-    <path
-      d="M64 68h72"
-      stroke="currentColor"
-      strokeWidth="8"
-      strokeLinecap="round"
-      opacity="0.35"
-    />
-    <circle cx="148" cy="104" r="10" fill="currentColor" opacity="0.65" />
-  </svg>
-);
-
 export default function TaxonomyManager() {
   const t = useTranslations('taxonomy');
   const queryClient = useQueryClient();
@@ -373,7 +327,7 @@ export default function TaxonomyManager() {
   const tabPanelId = 'taxonomy-tabpanel';
 
   const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, currentTab: Tab) => {
-    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(event.key)) return;
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
 
     event.preventDefault();
     const currentIndex = tabOrder.indexOf(currentTab);
@@ -390,7 +344,7 @@ export default function TaxonomyManager() {
       return;
     }
 
-    const offset = event.key === 'ArrowRight' ? 1 : -1;
+    const offset = event.key === 'ArrowDown' ? 1 : -1;
     const nextIndex = (currentIndex + offset + tabOrder.length) % tabOrder.length;
     const nextTab = tabOrder[nextIndex];
     setActiveTab(nextTab);
@@ -500,96 +454,120 @@ export default function TaxonomyManager() {
     />
   );
 
+
   return (
-    <div className="grid gap-8">
+    <div className="relative">
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 px-4 py-3 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-lg animate-in fade-in slide-in-from-top-2">
+        <div className="fixed top-4 right-4 z-50 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-700 shadow-lg animate-in fade-in slide-in-from-top-2">
           {toastMessage}
         </div>
       )}
 
-      <div className="flex justify-center">
+      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+        <aside className="self-start space-y-4 lg:sticky lg:top-4">
+          <Card className="overflow-hidden border-slate-200 shadow-sm">
+            <CardHeader className="space-y-1 pb-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">{t('sectionLabel')}</p>
+              <CardTitle className="text-xl text-slate-900">{t('pageTitle')}</CardTitle>
+              <p className="text-sm text-slate-500">{t('pageLead')}</p>
+            </CardHeader>
+            <CardContent className="p-0">
+              <nav role="tablist" aria-label={t('common.listTitle')} className="divide-y divide-slate-100">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.value}
+                      ref={(node) => {
+                        tabRefs.current[tab.value] = node;
+                      }}
+                      role="tab"
+                      aria-selected={activeTab === tab.value}
+                      aria-controls={tabPanelId}
+                      id={`taxonomy-tab-${tab.value}`}
+                      tabIndex={activeTab === tab.value ? 0 : -1}
+                      onClick={() => setActiveTab(tab.value)}
+                      onKeyDown={(event) => handleTabKeyDown(event, tab.value)}
+                      className={cn(
+                        'flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200',
+                        activeTab === tab.value ? 'bg-slate-50' : 'hover:bg-slate-50/70',
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={cn(
+                            'flex h-9 w-9 items-center justify-center rounded-lg border text-slate-700',
+                            activeTab === tab.value ? 'border-slate-300 bg-white shadow-sm' : 'border-slate-200 bg-slate-50',
+                          )}
+                        >
+                          <Icon />
+                        </span>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-slate-900">{t(`${tab.value}.toolbarTitle`)}</p>
+                          <p className="text-xs text-slate-500">{t(`${tab.value}.cardHelper`)}</p>
+                        </div>
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className="h-7 min-w-[2.5rem] justify-center rounded-full bg-slate-900/5 text-xs font-semibold text-slate-700"
+                        aria-live="polite"
+                        aria-busy={showTabLoading}
+                      >
+                        {showTabLoading ? (
+                          <span className="inline-flex h-3 w-8 animate-pulse rounded-full bg-slate-200" aria-hidden />
+                        ) : (
+                          tabCounts[tab.value]
+                        )}
+                        <span className="sr-only">{t('common.listTitle')}</span>
+                      </Badge>
+                    </button>
+                  );
+                })}
+              </nav>
+            </CardContent>
+          </Card>
+        </aside>
+
         <div
-          role="tablist"
-          aria-label={t('common.listTitle')}
-          className="inline-flex items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50/80 p-1 backdrop-blur"
+          id={tabPanelId}
+          role="tabpanel"
+          aria-labelledby={`taxonomy-tab-${activeTab}`}
+          className="space-y-6"
         >
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.value}
-                ref={(node) => {
-                  tabRefs.current[tab.value] = node;
-                }}
-                role="tab"
-                aria-selected={activeTab === tab.value}
-                aria-controls={tabPanelId}
-                id={`taxonomy-tab-${tab.value}`}
-                tabIndex={activeTab === tab.value ? 0 : -1}
-                onClick={() => setActiveTab(tab.value)}
-                onKeyDown={(event) => handleTabKeyDown(event, tab.value)}
-                className={`group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-50 ${
-                  activeTab === tab.value
-                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-inset ring-slate-200'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900'
-                }`}
-              >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-lg ${
-                  activeTab === tab.value ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 shadow-inner'
-                }`}>
-                  <Icon />
-                </span>
-                <span className="truncate">{t(`${tab.value}.toolbarTitle`)}</span>
-                <Badge
-                  variant="secondary"
-                  className={`ml-1 h-6 min-w-[2rem] justify-center rounded-full px-2 text-xs font-semibold ${
-                    activeTab === tab.value
-                      ? 'bg-slate-900/10 text-slate-900'
-                      : 'bg-white text-slate-600'
-                  }`}
-                  aria-live="polite"
-                  aria-busy={showTabLoading}
-                >
-                  {showTabLoading ? (
-                    <span className="inline-flex h-3 w-8 animate-pulse rounded-full bg-slate-200" aria-hidden />
-                  ) : (
-                    tabCounts[tab.value]
-                  )}
-                  <span className="sr-only">{t('common.listTitle')}</span>
-                </Badge>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {errorMessage && (
-        <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm">
-          {errorMessage}
-        </div>
-      )}
-
-      <div className="grid lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-4 lg:sticky lg:top-6">
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <div className="bg-slate-50/50 px-6 py-4 border-b border-slate-100">
-              <CardHeader className="p-0 space-y-0">
-                <CardTitle className="text-lg text-slate-800">
-                  {editingItem ? t('common.editTitle') : t(`${activeTab}.cardTitle`)}
-                </CardTitle>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                  {t(`${activeTab}.cardHelper`)}
-                </p>
-              </CardHeader>
+          {errorMessage && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
             </div>
-            
-            <CardContent className="p-6 space-y-6">
-              <div className="grid gap-6 lg:grid-cols-2">
-                <section className="space-y-3">
-                  <p className="text-sm font-semibold text-slate-700">{t('sections.mainInfo')}</p>
+          )}
+
+          <Card className="overflow-hidden border-slate-200 shadow-sm">
+            <CardHeader className="gap-3 border-b border-slate-100 pb-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
+                    {t(`${activeTab}.toolbarTitle`)}
+                  </p>
+                  <CardTitle className="text-lg text-slate-900">
+                    {editingItem ? t('common.editTitle') : t(`${activeTab}.cardTitle`)}
+                  </CardTitle>
+                  <p className="text-sm text-slate-500">{t(`${activeTab}.cardHelper`)}</p>
+                </div>
+                <div className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+                  <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" aria-hidden />
+                  {t('common.listTitle')}: {tabCounts[activeTab]}
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              <div className="divide-y divide-slate-100">
+                <section className="grid gap-4 p-6 md:grid-cols-[220px_1fr]">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-slate-700">{t('sections.mainInfo')}</p>
+                    <p className="text-xs leading-relaxed text-slate-500">{t('helpers.label')}</p>
+                  </div>
                   <div className="space-y-2">
-                    <Label htmlFor="label" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                    <Label htmlFor="label" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
                       {t(`${activeTab}.label`)}
                     </Label>
                     <Input
@@ -599,70 +577,80 @@ export default function TaxonomyManager() {
                       placeholder={t(`${activeTab}.placeholder`)}
                       className={cn(
                         'bg-white',
-                        labelHasError &&
-                          'border-red-300 text-red-900 focus-visible:ring-red-200 focus-visible:border-red-400',
+                        labelHasError && 'border-red-300 text-red-900 focus-visible:border-red-400 focus-visible:ring-red-200',
                       )}
                       aria-invalid={labelHasError}
                       aria-describedby="taxonomy-label-help"
                     />
                     <div id="taxonomy-label-help">
                       {labelHasError
-                        ? renderStatusHelper('error', alreadyExists ? t(`${activeTab}.exists`) : t('validation.labelRequired'))
+                        ? renderStatusHelper(
+                            'error',
+                            alreadyExists ? t(`${activeTab}.exists`) : t('validation.labelRequired'),
+                          )
                         : renderStatusHelper('info', t('helpers.label'))}
                     </div>
                   </div>
                 </section>
 
                 {activeTab === 'tags' && (
-                  <section className="space-y-3">
-                    <p className="text-sm font-semibold text-slate-700">{t('sections.color')}</p>
-                    <div className="space-y-2">
-                      <Label htmlFor="color" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                        {t('tags.colorLabel')}
-                      </Label>
-                      <div className="flex items-center gap-3">
-                        <Input
-                          type="color"
-                          id="color"
-                          value={colorInput || colorSwatches[0]}
-                          onChange={(e) => setColorInput(e.target.value)}
-                          className="h-11 w-16 bg-white p-1"
-                          aria-describedby="taxonomy-color-help"
-                        />
-                        <Input
-                          type="text"
-                          inputMode="text"
-                          id="color-hex"
-                          value={colorInput}
-                          onChange={(e) => setColorInput(e.target.value)}
-                          placeholder={t('tags.colorPlaceholder')}
-                          className={cn(
-                            'flex-1 bg-white',
-                            colorHasError &&
-                              'border-red-300 text-red-900 focus-visible:ring-red-200 focus-visible:border-red-400',
-                          )}
-                          aria-invalid={colorHasError}
-                          aria-describedby="taxonomy-color-help"
-                        />
+                  <section className="grid gap-4 p-6 md:grid-cols-[220px_1fr]">
+                    <div className="space-y-1">
+                      <p className="text-sm font-semibold text-slate-700">{t('sections.color')}</p>
+                      <p className="text-xs leading-relaxed text-slate-500">{t('helpers.color')}</p>
+                    </div>
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="color" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                          {t('tags.colorLabel')}
+                        </Label>
+                        <div className="flex items-center gap-3">
+                          <Input
+                            type="color"
+                            id="color"
+                            value={colorInput || colorSwatches[0]}
+                            onChange={(e) => setColorInput(e.target.value)}
+                            className="h-11 w-16 bg-white p-1"
+                            aria-describedby="taxonomy-color-help"
+                          />
+                          <Input
+                            type="text"
+                            inputMode="text"
+                            id="color-hex"
+                            value={colorInput}
+                            onChange={(e) => setColorInput(e.target.value)}
+                            placeholder={t('tags.colorPlaceholder')}
+                            className={cn(
+                              'flex-1 bg-white',
+                              colorHasError && 'border-red-300 text-red-900 focus-visible:border-red-400 focus-visible:ring-red-200',
+                            )}
+                            aria-invalid={colorHasError}
+                            aria-describedby="taxonomy-color-help"
+                          />
+                        </div>
                       </div>
+
                       <div className="flex flex-wrap gap-2" role="list" aria-label={t('tags.swatchesLabel')}>
                         {colorSwatches.map((swatch) => (
                           <button
                             key={swatch}
                             type="button"
-                            className={cn(
-                              'h-8 w-8 rounded-full border ring-offset-2 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400',
-                              colorInput === swatch
-                                ? 'ring-2 ring-slate-500 border-slate-300'
-                                : 'border-slate-200 hover:scale-[1.02]',
-                            )}
-                            style={{ backgroundColor: swatch }}
                             onClick={() => setColorInput(swatch)}
                             aria-label={t('tags.swatchAria', { color: swatch })}
-                            role="listitem"
-                          />
+                            className={cn(
+                              'group relative h-9 w-9 rounded-full border border-slate-200 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200',
+                              colorInput === swatch && 'ring-2 ring-amber-200',
+                            )}
+                          >
+                            <span
+                              aria-hidden
+                              className="absolute inset-[5px] rounded-full"
+                              style={{ backgroundColor: swatch }}
+                            />
+                          </button>
                         ))}
                       </div>
+
                       <div id="taxonomy-color-help">
                         {colorHasError
                           ? renderStatusHelper('error', t('validation.colorFormat'))
@@ -673,27 +661,28 @@ export default function TaxonomyManager() {
                 )}
 
                 {activeTab === 'pathologies' && (
-                  <section className="space-y-3 lg:col-span-2">
-                    <div className="flex items-center gap-2">
+                  <section className="grid gap-4 p-6 md:grid-cols-[220px_1fr]">
+                    <div className="space-y-1">
                       <p className="text-sm font-semibold text-slate-700">{t('sections.pathologyDetails')}</p>
-                      <Badge variant="secondary">{t('helpers.pathologyBadge')}</Badge>
+                      <p className="text-xs leading-relaxed text-slate-500">{t('helpers.pathologyBadge')}</p>
                     </div>
-                    <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="grid gap-4 md:grid-cols-2">
                       <div className="space-y-2">
-                        <Label htmlFor="desc" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        <Label htmlFor="description" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
                           {t('pathologies.descLabel')}
                         </Label>
                         <Textarea
-                          id="desc"
+                          id="description"
                           value={descInput}
                           onChange={(e) => setDescInput(e.target.value)}
                           placeholder={t('pathologies.descPlaceholder')}
-                          className="min-h-[120px] bg-white resize-none"
+                          rows={4}
+                          className="bg-white"
                         />
-                        {renderStatusHelper('info', t('helpers.description'))}
+                        <p className="text-xs text-slate-500">{t('helpers.description')}</p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="synonyms" className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        <Label htmlFor="synonyms" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
                           {t('pathologies.synonymsLabel')}
                         </Label>
                         <Input
@@ -703,130 +692,95 @@ export default function TaxonomyManager() {
                           placeholder={t('pathologies.synonymsPlaceholder')}
                           className="bg-white"
                         />
-                        {renderStatusHelper('info', t('pathologies.synonymsHelper'))}
+                        <p className="text-xs text-slate-500">{t('pathologies.synonymsHelper')}</p>
                       </div>
                     </div>
                   </section>
                 )}
+
+                <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+                  <div className="text-xs text-slate-500">
+                    {editingItem ? t('common.editingBadge') : t('states.emptyLead')}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      className="text-slate-700"
+                      onClick={() => {
+                        resetForm();
+                      }}
+                      disabled={saveMutation.isPending}
+                    >
+                      {t('buttons.reset')}
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      disabled={saveMutation.isPending}
+                      className="min-w-[120px]"
+                    >
+                      {actionLabel}
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardContent>
-            <div className="border-t border-slate-100 bg-white px-6 py-4 lg:sticky lg:bottom-4 lg:shadow-md">
-              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                {editingItem && (
-                  <Button variant="ghost" onClick={resetForm} className="sm:w-auto">
-                    {t('buttons.cancel')}
-                  </Button>
-                )}
-                <Button
-                  onClick={handleSave}
-                  disabled={!labelInput.trim() || alreadyExists || saveMutation.isPending}
-                  className="sm:w-auto"
-                >
-                  <span className="flex items-center gap-2">
-                    {saveMutation.isPending && <Spinner />}
-                    {actionLabel}
-                  </span>
-                </Button>
-              </div>
-            </div>
           </Card>
-        </div>
 
-        <div className="lg:col-span-8">
-          <Card
-            className="border-slate-200 shadow-sm h-full"
-            role="tabpanel"
-            aria-labelledby={`taxonomy-tab-${activeTab}`}
-            id={tabPanelId}
-          >
-            <div className="bg-white px-6 py-4 border-b border-slate-100 sticky top-0 z-10 rounded-t-xl">
+          <Card className="overflow-hidden border-slate-200 shadow-sm">
+            <CardHeader className="gap-4 border-b border-slate-100 pb-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-lg text-slate-800">{t('common.listTitle')}</CardTitle>
-                  <Badge variant="secondary" className="px-2.5 py-0.5 text-sm">
-                    {activeList.length}
-                  </Badge>
-                  {editingItem && (
-                    <Badge variant="outline" className="px-2 py-0.5 text-[11px] bg-amber-50 text-amber-700 border-amber-200">
-                      {t('common.editingBadge')}
-                    </Badge>
-                  )}
+                <div>
+                  <CardTitle className="text-lg text-slate-900">{t('common.listTitle')}</CardTitle>
+                  <p className="text-sm text-slate-500">{t('filters.statusLabel')}</p>
                 </div>
+                <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white p-1 shadow-sm">
+                  <Button
+                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('table')}
+                    className="gap-2 px-3 text-slate-700"
+                    aria-pressed={viewMode === 'table'}
+                    aria-label={t('view.table')}
+                  >
+                    <TableIcon />
+                    <span className="hidden text-xs font-medium sm:inline">{t('view.table')}</span>
+                  </Button>
+                  <Button
+                    variant={viewMode === 'compact' ? 'secondary' : 'ghost'}
+                    size="sm"
+                    onClick={() => setViewMode('compact')}
+                    className="gap-2 px-3 text-slate-700"
+                    aria-pressed={viewMode === 'compact'}
+                    aria-label={t('view.compact')}
+                  >
+                    <CardsIcon />
+                    <span className="hidden text-xs font-medium sm:inline">{t('view.compact')}</span>
+                  </Button>
+                </div>
+              </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative w-64 max-w-full">
+              <div className="grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex min-w-[240px] flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-inner">
+                    <SearchIcon />
                     <Input
                       value={searchTerm}
-                      onChange={(event) => setSearchTerm(event.target.value)}
+                      onChange={(e) => setSearchTerm(e.target.value)}
                       placeholder={t('filters.searchPlaceholder')}
-                      className="pl-9"
-                      aria-label={t('filters.searchPlaceholder')}
+                      className="h-9 border-0 bg-transparent p-0 text-sm focus-visible:ring-0"
                     />
-                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
-                      <SearchIcon />
-                    </span>
                   </div>
 
-                  <div className="relative">
-                    <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
-                      <FilterIcon />
-                    </span>
-                    <Select
-                      value={statusFilter}
-                      onChange={(event) => setStatusFilter(event.target.value as StatusFilter)}
-                      className="w-48 appearance-none pl-9 pr-10 text-sm"
-                      aria-label={t('filters.status.all')}
-                    >
-                      {statusOptions[activeTab].map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </Select>
-                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden
-                      >
-                        <path d="m7 10 5 5 5-5" />
-                      </svg>
-                    </span>
-                  </div>
-
-                  <div className="inline-flex items-center overflow-hidden rounded-xl border border-slate-200 bg-slate-50/70 shadow-sm">
-                    <Button
-                      type="button"
-                      variant={viewMode === 'table' ? 'default' : 'ghost'}
-                      className="h-9 gap-2 rounded-none border-0 px-3 text-slate-700"
-                      onClick={() => setViewMode('table')}
-                      aria-pressed={viewMode === 'table'}
-                      aria-label={t('view.table')}
-                    >
-                      <TableIcon />
-                      <span className="hidden sm:inline text-xs font-medium">{t('view.table')}</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={viewMode === 'compact' ? 'default' : 'ghost'}
-                      className="h-9 gap-2 rounded-none border-0 px-3 text-slate-700"
-                      onClick={() => setViewMode('compact')}
-                      aria-pressed={viewMode === 'compact'}
-                      aria-label={t('view.compact')}
-                    >
-                      <CardsIcon />
-                      <span className="hidden sm:inline text-xs font-medium">{t('view.compact')}</span>
-                    </Button>
-                  </div>
+                  <Select
+                    value={statusFilter}
+                    onValueChange={(value) => setStatusFilter(value as StatusFilter)}
+                    options={statusOptions[activeTab]}
+                    size="sm"
+                    className="min-w-[200px]"
+                  />
                 </div>
               </div>
-            </div>
+            </CardHeader>
 
             <CardContent className="p-0">
               {isLoading ? (
@@ -852,12 +806,11 @@ export default function TaxonomyManager() {
               ) : isError ? (
                 <div className="p-8 text-center text-red-500">{t('errors.unknown')}</div>
               ) : filteredList.length === 0 ? (
-                <div className="p-12 text-center flex flex-col items-center justify-center gap-3 text-slate-500">
-                  <EmptyIllustration />
-                  <p className="text-base font-semibold text-slate-700">
+                <div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center text-slate-600">
+                  <p className="text-base font-semibold text-slate-800">
                     {activeList.length === 0 ? t('common.empty') : t('filters.noResults')}
                   </p>
-                  <p className="text-sm text-slate-500 max-w-md">
+                  <p className="max-w-2xl text-sm text-slate-500">
                     {activeList.length === 0
                       ? t('states.emptyLead')
                       : t('filters.noResultsHelper', { query: searchTerm || t('filters.statusLabel') })}
@@ -901,22 +854,42 @@ export default function TaxonomyManager() {
                                 {editingItem?.id === item.id && (
                                   <Badge
                                     variant="outline"
-                                    className="h-5 px-1.5 text-[10px] bg-amber-100 text-amber-700 border-amber-200"
+                                    className="h-5 px-1.5 text-[10px] border-amber-200 bg-amber-100 text-amber-700"
                                   >
                                     {t('common.editingBadge')}
                                   </Badge>
                                 )}
                               </div>
-                              {activeTab === 'domains' && (
-                                <p className="text-xs text-slate-500">{t('helpers.label')}</p>
+
+                              {activeTab === 'pathologies' && item.description && (
+                                <p className="text-xs leading-relaxed text-slate-600">{item.description}</p>
+                              )}
+
+                              {activeTab === 'pathologies' && item.synonyms && item.synonyms.length > 0 && (
+                                <div className="flex flex-wrap gap-1">
+                                  {item.synonyms.map((syn, idx) => (
+                                    <span
+                                      key={idx}
+                                      className="inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600"
+                                    >
+                                      {syn}
+                                    </span>
+                                  ))}
+                                </div>
                               )}
                             </div>
 
                             <div className={cn('min-w-0 space-y-2', activeTab === 'tags' ? 'col-span-4' : 'col-span-5')}>
-                              {activeTab === 'pathologies' ? (
+                              {activeTab === 'tags' ? (
+                                <p className="text-xs text-slate-600">
+                                  {item.color ? t('helpers.color') : t('filters.status.withoutColor')}
+                                </p>
+                              ) : activeTab === 'domains' ? (
+                                <p className="text-xs text-slate-600">{t('helpers.label')}</p>
+                              ) : item.description || (item.synonyms && item.synonyms.length > 0) ? (
                                 <>
                                   {item.description && (
-                                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{item.description}</p>
+                                    <p className="text-xs leading-relaxed text-slate-600">{item.description}</p>
                                   )}
                                   {item.synonyms && item.synonyms.length > 0 && (
                                     <div className="flex flex-wrap gap-1">
@@ -1016,14 +989,14 @@ export default function TaxonomyManager() {
                                 {editingItem?.id === item.id && (
                                   <Badge
                                     variant="outline"
-                                    className="h-5 px-1.5 text-[10px] bg-amber-100 text-amber-700 border-amber-200"
+                                    className="h-5 px-1.5 text-[10px] border-amber-200 bg-amber-100 text-amber-700"
                                   >
                                     {t('common.editingBadge')}
                                   </Badge>
                                 )}
                               </div>
                               {activeTab === 'pathologies' && item.description && (
-                                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{item.description}</p>
+                                <p className="text-xs leading-relaxed text-slate-600 line-clamp-2">{item.description}</p>
                               )}
                               {activeTab === 'pathologies' && item.synonyms && item.synonyms.length > 0 && (
                                 <div className="flex flex-wrap gap-1">
