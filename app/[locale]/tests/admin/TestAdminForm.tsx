@@ -192,7 +192,7 @@ async function fetchTaxonomy(locale: Locale) {
 }
 
 async function fetchPathologies(locale: Locale, query?: string) {
-  const searchParams = new URLSearchParams({ locale, limit: '50' });
+  const searchParams = new URLSearchParams({ locale, limit: '50', includeAll: 'true' });
   if (query?.trim()) searchParams.set('q', query.trim());
   const response = await fetch(`/api/pathologies?${searchParams.toString()}`);
   if (!response.ok) throw new Error('load-pathologies');

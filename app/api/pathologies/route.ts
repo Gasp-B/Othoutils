@@ -16,6 +16,7 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const locale = (searchParams.get('locale') as Locale | null) ?? defaultLocale;
     const normalizedLocale = locale ?? defaultLocale;
+    const includeAll = searchParams.get('includeAll') === 'true';
     const q = searchParams.get('q')?.trim();
     const limitParam = Number(searchParams.get('limit') ?? 20);
     const limit = Number.isFinite(limitParam) && limitParam > 0 ? limitParam : 20;
@@ -28,9 +29,12 @@ export async function GET(req: Request) {
         .from('pathology_translations')
         .select('pathology_id, locale, label, description, synonyms, pathologies!inner(id, slug, status)')
         .eq('locale', searchLocale)
-        .eq('pathologies.status', 'published')
         .order('label', { ascending: true })
         .limit(limit);
+
+      if (!includeAll) {
+        query.eq('pathologies.status', 'published');
+      }
 
       if (q) {
         const like = `%${q}%`;
