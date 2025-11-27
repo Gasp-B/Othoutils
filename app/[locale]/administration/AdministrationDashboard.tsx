@@ -23,6 +23,16 @@ function AdministrationDashboard() {
       </div>
 
       <div className={styles.cardGrid}>
+        <Link href="/tests/admin" className={styles.card} aria-label={t('adminTests')}>
+          <div className={styles.cardBody}>
+            <p className={styles.cardEyebrow}>{t('catalogue')}</p>
+            <span className={styles.cardTitle}>{t('adminTests')}</span>
+          </div>
+          <span aria-hidden className={styles.cardArrow}>
+            →
+          </span>
+        </Link>
+
         <Link href="/tests/manage" className={styles.card} aria-label={t('addTest')}>
           <div className={styles.cardBody}>
             <p className={styles.cardEyebrow}>{t('catalogue')}</p>
