@@ -569,7 +569,11 @@
         "title": "Taxonomy",
         "domainsLabel": "Domains",
         "pathologiesLabel": "Pathologies",
-        "tagsLabel": "Tags"
+        "tagsLabel": "Tags",
+        "helper": "Attach taxonomy to help with filtering and discovery.",
+        "presetLabel": "Reuse taxonomy from another test",
+        "presetPlaceholder": "Select a test to copy taxonomy",
+        "presetHelper": "Choose an existing sheet to pre-fill domains, pathologies, and tags."
       }
     },
       "bibliography": {

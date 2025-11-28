@@ -130,6 +130,7 @@ function TestForm({ locale }: TestFormProps) {
   const queryClient = useQueryClient();
   
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
+  const [taxonomyPresetId, setTaxonomyPresetId] = useState<string>('');
   const [newBibliography, setNewBibliography] = useState({ label: '', url: '' });
   const [pathologyQuery, setPathologyQuery] = useState('');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
@@ -171,6 +172,7 @@ function TestForm({ locale }: TestFormProps) {
   useEffect(() => {
     if (!selectedTestId) {
       reset(defaultValues);
+      setTaxonomyPresetId('');
       return;
     }
     const test = tests?.find((t) => t.id === selectedTestId);
@@ -218,6 +220,18 @@ function TestForm({ locale }: TestFormProps) {
     const next = [...(currentBibliography || [])];
     next.splice(index, 1);
     setValue('bibliography', next, { shouldDirty: true });
+  };
+
+  const applyTaxonomyPreset = (testId: string) => {
+    setTaxonomyPresetId(testId);
+    if (!testId) return;
+
+    const preset = tests?.find((test) => test.id === testId);
+    if (!preset) return;
+
+    setValue('domains', preset.domains ?? [], { shouldDirty: true });
+    setValue('pathologies', preset.pathologies ?? [], { shouldDirty: true });
+    setValue('tags', preset.tags ?? [], { shouldDirty: true });
   };
 
   const commonMultiSelectTrans = {
@@ -345,39 +359,60 @@ function TestForm({ locale }: TestFormProps) {
         <div className={styles.columnStack}>
           <Card className="property-panel">
             <CardHeader>
-              <CardTitle>{formT('sections.taxonomy.title')}</CardTitle>
+              <div className="space-y-1">
+                <CardTitle>{formT('sections.taxonomy.title')}</CardTitle>
+                <p className="text-sm text-slate-500">{formT('sections.taxonomy.helper')}</p>
+              </div>
             </CardHeader>
-            <CardContent className={styles.columnStack}> {/* Espacement interne */}
-              
-              <MultiSelect
-                label={formT('sections.taxonomy.domainsLabel')}
-                options={taxonomy?.domains.map(d => ({ id: d.id, label: d.label })) ?? []}
-                selectedValues={currentDomains}
-                onChange={(vals: string[]) => setValue('domains', vals, { shouldDirty: true })}
-                allowCreate={true}
-                translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.domainsLabel') }}
-              />
+            <CardContent className="space-y-4">
+              <div className="grid gap-2">
+                <Label htmlFor="taxonomy-preset">{formT('sections.taxonomy.presetLabel')}</Label>
+                <Select
+                  id="taxonomy-preset"
+                  value={taxonomyPresetId}
+                  onChange={(e) => applyTaxonomyPreset(e.target.value)}
+                  className="bg-white/60"
+                >
+                  <option value="">{formT('sections.taxonomy.presetPlaceholder')}</option>
+                  {tests?.map((test) => (
+                    <option key={test.id} value={test.id}>
+                      {test.name}
+                    </option>
+                  ))}
+                </Select>
+                <p className="helper-text">{formT('sections.taxonomy.presetHelper')}</p>
+              </div>
 
-              <MultiSelect
-                label={formT('sections.taxonomy.pathologiesLabel')}
-                options={pathologyOptions.map((p) => ({ id: p.id, label: p.label }))}
-                selectedValues={currentPathologies}
-                onChange={(vals: string[]) => setValue('pathologies', vals, { shouldDirty: true })}
-                onSearch={setPathologyQuery}
-                isLoading={isLoadingPathologies}
-                allowCreate={false}
-                translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.pathologiesLabel') }}
-              />
+              <div className={styles.columnStack}>
+                <MultiSelect
+                  label={formT('sections.taxonomy.domainsLabel')}
+                  options={taxonomy?.domains.map(d => ({ id: d.id, label: d.label })) ?? []}
+                  selectedValues={currentDomains}
+                  onChange={(vals: string[]) => setValue('domains', vals, { shouldDirty: true })}
+                  allowCreate={true}
+                  translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.domainsLabel') }}
+                />
 
-              <MultiSelect
-                label={formT('sections.taxonomy.tagsLabel')}
-                options={taxonomy?.tags.map(t => ({ id: t.id, label: t.label })) ?? []}
-                selectedValues={currentTags}
-                onChange={(vals: string[]) => setValue('tags', vals, { shouldDirty: true })}
-                allowCreate={true}
-                translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.tagsLabel') }}
-              />
+                <MultiSelect
+                  label={formT('sections.taxonomy.pathologiesLabel')}
+                  options={pathologyOptions.map((p) => ({ id: p.id, label: p.label }))}
+                  selectedValues={currentPathologies}
+                  onChange={(vals: string[]) => setValue('pathologies', vals, { shouldDirty: true })}
+                  onSearch={setPathologyQuery}
+                  isLoading={isLoadingPathologies}
+                  allowCreate={false}
+                  translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.pathologiesLabel') }}
+                />
 
+                <MultiSelect
+                  label={formT('sections.taxonomy.tagsLabel')}
+                  options={taxonomy?.tags.map(t => ({ id: t.id, label: t.label })) ?? []}
+                  selectedValues={currentTags}
+                  onChange={(vals: string[]) => setValue('tags', vals, { shouldDirty: true })}
+                  allowCreate={true}
+                  translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.tagsLabel') }}
+                />
+              </div>
             </CardContent>
           </Card>
 
