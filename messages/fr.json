@@ -456,8 +456,10 @@
     },
     "feedback": {
       "errors": {
+        "title": "Erreur :",
         "generic": "Une erreur est survenue. Merci de réessayer.",
         "genericWithReason": "Une erreur est survenue : {reason}",
+        "unauthorized": "Vous devez être connecté pour enregistrer ces modifications.",
         "fetchTests": "Impossible de récupérer les tests.",
         "fetchTaxonomy": "Impossible de charger la taxonomie.",
         "create": "Impossible de créer le test.",

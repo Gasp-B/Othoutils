@@ -600,14 +600,16 @@
         "remove": "Remove",
         "loading": "Loading…"
       }
-    },
-    "feedback": {
-      "errors": {
-        "generic": "An error occurred. Please try again.",
-        "genericWithReason": "An error occurred: {reason}",
-        "fetchTests": "Unable to retrieve the tests.",
-        "fetchTaxonomy": "Unable to load domains and tags.",
-        "create": "Unable to create the test.",
+      },
+      "feedback": {
+        "errors": {
+          "title": "Error:",
+          "generic": "An error occurred. Please try again.",
+          "genericWithReason": "An error occurred: {reason}",
+          "unauthorized": "You need to be logged in to save changes.",
+          "fetchTests": "Unable to retrieve the tests.",
+          "fetchTaxonomy": "Unable to load domains and tags.",
+          "create": "Unable to create the test.",
         "update": "Unable to update the test."
       },
       "success": {

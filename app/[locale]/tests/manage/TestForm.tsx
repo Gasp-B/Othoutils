@@ -68,14 +68,14 @@ const defaultValues: FormValues = {
 
 // --- Fonctions API (Fetchers) ---
 async function fetchTests(locale: Locale) {
-  const response = await fetch(`/api/tests?locale=${locale}`);
+  const response = await fetch(`/api/tests?locale=${locale}`, { credentials: 'include' });
   if (!response.ok) throw new Error('Impossible de récupérer les tests');
   const json = (await response.json()) as ApiResponse;
   return testsResponseSchema.parse({ tests: json.tests ?? [] }).tests;
 }
 
 async function fetchTaxonomy(locale: Locale) {
-  const response = await fetch(`/api/tests/taxonomy?locale=${locale}`);
+  const response = await fetch(`/api/tests/taxonomy?locale=${locale}`, { credentials: 'include' });
   if (!response.ok) throw new Error('Impossible de récupérer la taxonomie');
   return (await response.json()) as TaxonomyResponse;
 }
@@ -84,13 +84,19 @@ async function saveTest(payload: FormValues, locale: Locale, method: 'POST' | 'P
   const response = await fetch('/api/tests', {
     method,
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ ...payload, locale }),
   });
+
+  const json = (await response.json().catch(() => ({}))) as { error?: string };
+
   if (!response.ok) {
-    const json = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(json.error || 'Erreur de sauvegarde');
+    const error = new Error(json.error || 'saveError');
+    (error as Error & { status?: number }).status = response.status;
+    throw error;
   }
-  return (await response.json()) as ApiResponse;
+
+  return json as ApiResponse;
 }
 
 // --- Composant Toast Local ---
@@ -253,7 +259,25 @@ function TestForm({ locale }: TestFormProps) {
 
       {mutation.isError && (
         <div className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
-          <strong>Erreur :</strong> {mutation.error?.message}
+          <strong>{feedbackT('errors.title')} </strong>
+          {(() => {
+            const typedError = mutation.error as Error & { status?: number };
+            const isUnauthorized =
+              typedError?.message === 'Unauthorized' || typedError?.status === 401;
+
+            if (isUnauthorized) {
+              return feedbackT('errors.unauthorized');
+            }
+
+            const reason =
+              typedError?.message && typedError.message !== 'saveError'
+                ? typedError.message
+                : '';
+
+            return reason
+              ? feedbackT('errors.genericWithReason', { reason })
+              : feedbackT('errors.generic');
+          })()}
         </div>
       )}
 
