@@ -16,6 +16,7 @@
     "news": "Nouveautés",
     "admin": "Administration",
     "adminMenuLabel": "Menu administration",
+    "searchHub": "Recherche",
     "localeSwitcher": {
       "label": "Langue",
       "ariaLabel": "Changer de langue",
@@ -770,6 +771,58 @@
     },
     "labels": {
       "colorValue": "Couleur {value}"
+    }
+  },
+  "SearchHub": {
+    "metadata": {
+      "title": "Othoutils | Recherche fédérée",
+      "description": "Recherchez dans les évaluations, auto-questionnaires et ressources externes au même endroit."
+    },
+    "sectionLabel": "Recherche",
+    "headingTitle": "Recherche fédérée dans le catalogue",
+    "headingText": "Filtrez immédiatement les évaluations, auto-questionnaires et ressources externes avec des filtres inspirés de DocSearch et Linear.",
+    "helper": "Utilisez les filtres à gauche pour cibler un type ou un domaine. Les résultats se mettent à jour sans recharger la page.",
+    "filters": {
+      "title": "Filtres",
+      "lead": "Combinez type et domaines pour affiner.",
+      "typeLabel": "Type",
+      "types": {
+        "tests": "Évaluations & tests",
+        "resources": "Ressources"
+      },
+      "domainsLabel": "Domaines",
+      "emptyDomains": "Aucun domaine disponible pour le moment.",
+      "reset": "Réinitialiser"
+    },
+    "tags": {
+      "empty": "Aucun tag",
+      "more": "{tag} +{count} autres"
+    },
+    "empty": "Aucun résultat ne correspond à ces filtres.",
+    "categories": {
+      "assessments": {
+        "title": "Évaluations & tests",
+        "subtitle": "Outils standardisés ou menés par les cliniciens."
+      },
+      "selfReports": {
+        "title": "Auto-questionnaires",
+        "subtitle": "Questionnaires remplis directement par les patients ou les aidants."
+      },
+      "resources": {
+        "title": "Ressources",
+        "subtitle": "Liens externes, guides et outils numériques."
+      }
+    },
+    "meta": {
+      "population": "Population",
+      "materials": "Matériel",
+      "materialsFallback": "Matériel non précisé",
+      "resourceType": "Type de ressource",
+      "pathologies": "Pathologies"
+    },
+    "actions": {
+      "viewSheet": "Voir la fiche",
+      "viewResource": "Ouvrir la ressource"
     }
   }
 }

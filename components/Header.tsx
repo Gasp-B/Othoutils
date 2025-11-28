@@ -106,6 +106,9 @@ function Header() {
             </span>
           )}
 
+          <Link className="ph-header__link" href="/search">
+            {t('searchHub')}
+          </Link>
           <a className="ph-header__link" href="#collaboration">
             {t('community')}
           </a>
