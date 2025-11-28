@@ -16,6 +16,7 @@
     "news": "What's new",
     "admin": "Administration",
     "adminMenuLabel": "Administration menu",
+    "searchHub": "Search hub",
     "localeSwitcher": {
       "label": "Language",
       "ariaLabel": "Switch language",
@@ -839,6 +840,58 @@
       "colorValue": "Color {value}"
     }
   },
+  "SearchHub": {
+    "metadata": {
+      "title": "Othoutils | Federated search",
+      "description": "Search assessments, self-reports, and external resources from one place."
+    },
+    "sectionLabel": "Search hub",
+    "headingTitle": "Federated search across the catalog",
+    "headingText": "Filter assessments, self-reports, and external resources instantly with faceted filters inspired by DocSearch and Linear.",
+    "helper": "Use the filters on the left to focus on a type or domain. Results update immediately without reloading the page.",
+    "filters": {
+      "title": "Filters",
+      "lead": "Combine types and domains to narrow results.",
+      "typeLabel": "Type",
+      "types": {
+        "tests": "Assessments & tests",
+        "resources": "Resources"
+      },
+      "domainsLabel": "Domains",
+      "emptyDomains": "No domains available yet.",
+      "tagsLabel": "Tags",
+      "emptyTags": "No tags available yet.",
+      "reset": "Reset filters"
+    },
+    "tags": {
+      "empty": "No tags",
+      "more": "{tag} +{count} more"
+    },
+    "empty": "No results match these filters.",
+    "categories": {
+      "assessments": {
+        "title": "Assessments & tests",
+        "subtitle": "Standardized and clinician-led tools."
+      },
+      "selfReports": {
+        "title": "Self-reports",
+        "subtitle": "Questionnaires filled directly by patients or caregivers."
+      },
+      "resources": {
+        "title": "Resources",
+        "subtitle": "External links, guides, and digital helpers."
+      }
+    },
+    "meta": {
+      "population": "Population",
+      "materials": "Materials",
+      "materialsFallback": "Materials not specified",
+      "resourceType": "Resource type",
+      "pathologies": "Pathologies"
+    },
+    "actions": {
+      "viewSheet": "View sheet",
+      "viewResource": "Open resource"
   "Auth": {
     "login": {
       "title": "Sign in",

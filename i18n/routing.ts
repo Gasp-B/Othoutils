@@ -21,6 +21,10 @@ export const pathnames = {
     en: '/catalogue/[slug]/[tag]',
     fr: '/catalogue/[slug]/[tag]',
   },
+  '/search': {
+    en: '/search',
+    fr: '/search',
+  },
   '/administration': '/administration',
   '/administration/TaxonomyManagement': {
     en: '/administration/TaxonomyManagement',
