@@ -15,7 +15,7 @@ type LocaleLayoutProps = {
   params: Promise<{ locale: string }>;
 };
 
-async function LocaleLayout({ children, params }: LocaleLayoutProps) {
+export default async function LocaleLayout({ children, params }: LocaleLayoutProps) {
   const { locale } = await params;
 
   if (!locales.includes(locale as Locale)) {
@@ -36,5 +36,3 @@ async function LocaleLayout({ children, params }: LocaleLayoutProps) {
     </html>
   );
 }
-
-export default LocaleLayout;
