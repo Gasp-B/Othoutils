@@ -45,8 +45,6 @@ const formSchemaBase = testSchema
 
 type FormValues = z.infer<typeof formSchemaBase>;
 type ApiResponse = { test?: TestDto; tests?: TestDto[]; error?: string };
-type PathologyItem = { id: string; label: string };
-
 const defaultValues: FormValues = {
   id: undefined,
   name: '',
@@ -80,15 +78,6 @@ async function fetchTaxonomy(locale: Locale) {
   const response = await fetch(`/api/tests/taxonomy?locale=${locale}`);
   if (!response.ok) throw new Error('Impossible de récupérer la taxonomie');
   return (await response.json()) as TaxonomyResponse;
-}
-
-async function fetchPathologies(locale: Locale, query?: string) {
-  const searchParams = new URLSearchParams({ locale, limit: '50' });
-  if (query?.trim()) searchParams.set('q', query.trim());
-  const response = await fetch(`/api/pathologies?${searchParams.toString()}`);
-  if (!response.ok) throw new Error('Impossible de récupérer les pathologies');
-  const json = (await response.json()) as { items: PathologyItem[] };
-  return json.items ?? [];
 }
 
 async function saveTest(payload: FormValues, locale: Locale, method: 'POST' | 'PATCH') {
@@ -132,7 +121,6 @@ function TestForm({ locale }: TestFormProps) {
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [taxonomyPresetId, setTaxonomyPresetId] = useState<string>('');
   const [newBibliography, setNewBibliography] = useState({ label: '', url: '' });
-  const [pathologyQuery, setPathologyQuery] = useState('');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const { data: tests } = useQuery({ 
@@ -143,12 +131,6 @@ function TestForm({ locale }: TestFormProps) {
   const { data: taxonomy } = useQuery({ 
     queryKey: ['test-taxonomy', locale], 
     queryFn: () => fetchTaxonomy(locale) 
-  });
-
-  const { data: pathologyOptions = [], isLoading: isLoadingPathologies } = useQuery({
-    queryKey: ['pathologies', locale, pathologyQuery],
-    queryFn: () => fetchPathologies(locale, pathologyQuery),
-    placeholderData: (prev) => prev 
   });
 
   const {
@@ -395,11 +377,9 @@ function TestForm({ locale }: TestFormProps) {
 
                 <MultiSelect
                   label={formT('sections.taxonomy.pathologiesLabel')}
-                  options={pathologyOptions.map((p) => ({ id: p.id, label: p.label }))}
+                  options={taxonomy?.pathologies.map((p) => ({ id: p.id, label: p.label })) ?? []}
                   selectedValues={currentPathologies}
                   onChange={(vals: string[]) => setValue('pathologies', vals, { shouldDirty: true })}
-                  onSearch={setPathologyQuery}
-                  isLoading={isLoadingPathologies}
                   allowCreate={false}
                   translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.pathologiesLabel') }}
                 />
