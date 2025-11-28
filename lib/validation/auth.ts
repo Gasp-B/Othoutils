@@ -35,3 +35,14 @@ export const createSignupSchema = (t: (key: string) => string) =>
     });
 
 export type SignupInput = z.infer<ReturnType<typeof createSignupSchema>>;
+
+export const createForgotPasswordSchema = (t: (key: string) => string) =>
+  z.object({
+    email: z
+      .string()
+      .trim()
+      .min(1, { message: t('validation.email.required') })
+      .email({ message: t('validation.email.invalid') }),
+  });
+
+export type ForgotPasswordInput = z.infer<ReturnType<typeof createForgotPasswordSchema>>;
