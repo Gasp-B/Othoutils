@@ -58,12 +58,12 @@ export function MultiSelect({
 
   const filteredOptions = useMemo(() => {
     const lowerQuery = query.trim().toLowerCase();
-    return options.filter((opt) => 
+    return options.filter((opt) =>
       opt.label.toLowerCase().includes(lowerQuery)
     );
   }, [options, query]);
 
-  const canCreate = allowCreate && query.trim().length > 0 && 
+  const canCreate = allowCreate && query.trim().length > 0 &&
     !options.some(o => o.label.toLowerCase() === query.trim().toLowerCase()) &&
     !normalizedSelected.has(query.trim());
 
@@ -149,7 +149,7 @@ export function MultiSelect({
 
             <div className={styles.optionsList}>
               {isLoading && <p className={styles.emptyState}>{translations.loading}</p>}
-              
+
               {!isLoading && filteredOptions.map((option) => {
                 const isSelected = normalizedSelected.has(option.label);
                 return (

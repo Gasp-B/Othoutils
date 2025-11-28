@@ -301,6 +301,175 @@
       "number": "Saisissez un nombre entier valide."
     }
   },
+  "ManageTests": {
+    "metadata": {
+      "title": "Gérer les tests | Othoutils",
+      "description": "Ajouter ou mettre à jour un test avec ses domaines et tags."
+    },
+    "page": {
+      "sectionLabel": "Créer ou mettre à jour un test",
+      "title": "Ajouter / Éditer un test",
+      "lead": "Utilisez ce formulaire pour créer un test ou modifier une fiche existante, y compris ses tags, domaines et pathologies."
+    },
+    "form": {
+      "toolbar": {
+        "sheetLabel": "Fiche",
+        "newTest": "Nouveau test",
+        "editBadge": "Mode édition",
+        "newBadge": "Nouvelle fiche",
+        "reset": "Réinitialiser"
+      },
+      "actions": {
+        "create": "Créer le test",
+        "update": "Mettre à jour",
+        "pending": "Enregistrement…"
+      },
+      "fields": {
+        "name": {
+          "placeholder": "Nom du test (ex : Évaluation du langage)"
+        },
+        "shortDescription": {
+          "label": "Description longue",
+          "placeholder": "Présentez l'outil et ce qui le rend unique."
+        },
+        "objective": {
+          "label": "Objectif",
+          "placeholder": "Que mesure ce test ? Dans quel contexte l'utiliser ?"
+        },
+        "notes": {
+          "label": "Notes internes",
+          "placeholder": "Observations internes ou liens vers des ressources connexes."
+        },
+        "populationDetailed": {
+          "label": "Public cible",
+          "placeholder": "Ajoutez du détail sur le public si besoin"
+        },
+        "materialsDetailed": {
+          "label": "Matériel détaillé",
+          "placeholder": "Listez le matériel précis, les grilles ou supports nécessaires."
+        },
+        "age": {
+          "label": "Âge (mois)",
+          "minPlaceholder": "36",
+          "maxPlaceholder": "120"
+        },
+        "duration": {
+          "label": "Durée",
+          "placeholder": "45",
+          "helper": "Durée moyenne en minutes."
+        },
+        "population": {
+          "label": "Population",
+          "placeholder": "Enfants, adolescents, adultes…"
+        },
+        "publisher": {
+          "label": "Éditeur",
+          "placeholder": "Maison d'édition"
+        },
+        "priceRange": {
+          "placeholder": "Fourchette de prix"
+        },
+        "purchase": {
+          "label": "Achat"
+        },
+        "buyLink": {
+          "placeholder": "Lien d'achat (URL)"
+        },
+        "materials": {
+          "placeholder": "Matériel requis"
+        },
+        "standardization": {
+          "label": "Standardisation",
+          "standardized": "Standardisé",
+          "nonStandardized": "Non standardisé",
+          "helper": "Basculer selon le type de protocole."
+        },
+        "domains": {
+          "label": "Domaines",
+          "description": "Affinez la fiche en ajoutant un ou plusieurs domaines.",
+          "placeholder": "Rechercher un domaine"
+        },
+        "tags": {
+          "label": "Tags",
+          "description": "Ajoutez des mots-clés pour améliorer la recherche.",
+          "placeholder": "Rechercher un tag"
+        },
+        "pathologies": {
+          "label": "Pathologies",
+          "description": "Associez les troubles liés pour faciliter le filtrage et la découverte.",
+          "placeholder": "Rechercher une pathologie"
+        }
+      },
+      "sections": {
+        "detailedSummary": {
+          "title": "Résumé détaillé"
+        },
+        "bibliography": {
+          "title": "Bibliographie",
+          "helper": "Ajoutez des liens vers des articles, vidéos ou références utiles.",
+          "empty": "Aucun lien pour le moment. Ajoutez votre première référence ci-dessous."
+        },
+        "additionalInfo": {
+          "title": "Informations complémentaires"
+        },
+        "properties": {
+          "title": "Propriétés",
+          "helper": "Pensez aux propriétés clés comme dans une fiche Notion.",
+          "targetingTitle": "Ciblage & durée",
+          "publishingTitle": "Édition & accès"
+        },
+        "taxonomy": {
+          "title": "Taxonomie",
+          "domainsLabel": "Domaines",
+          "pathologiesLabel": "Pathologies",
+          "tagsLabel": "Tags",
+          "helper": "Associez la taxonomie pour optimiser le filtrage et la découverte."
+        }
+      },
+      "bibliography": {
+        "entryLabel": "Titre ou source",
+        "entryPlaceholder": "Article, vidéo, ouvrage…",
+        "linkLabel": "Lien",
+        "linkPlaceholder": "https://exemple.com/ressource",
+        "remove": "Supprimer",
+        "addTitle": "Ajouter une référence",
+        "addPlaceholder": "Titre de la ressource",
+        "addUrlPlaceholder": "https://exemple.com/ressource",
+        "addButton": "Ajouter",
+        "addHelper": "Indiquez un titre court et une URL valide. Les liens seront enregistrés avec le test."
+      },
+      "multiSelect": {
+        "placeholder": "Sélectionner",
+        "dialogLabel": "Sélectionner {label}",
+        "dialogTitle": "Sélectionner {label}",
+        "filterHelper": "Tapez pour filtrer, cliquez pour ajouter ou retirer.",
+        "searchPlaceholder": "Rechercher…",
+        "filterAria": "Filtrer {label}",
+        "clear": "Effacer",
+        "close": "Fermer",
+        "emptySelection": "Aucun élément sélectionné pour le moment.",
+        "emptyResults": "Aucun résultat",
+        "add": "Ajouter",
+        "remove": "Supprimer",
+        "loading": "Chargement…"
+      }
+    },
+    "feedback": {
+      "errors": {
+        "title": "Erreur :",
+        "generic": "Une erreur est survenue. Merci de réessayer.",
+        "genericWithReason": "Une erreur est survenue : {reason}",
+        "unauthorized": "Vous devez être connecté pour enregistrer ces modifications.",
+        "fetchTests": "Impossible de récupérer les tests.",
+        "fetchTaxonomy": "Impossible de charger la taxonomie.",
+        "create": "Impossible de créer le test.",
+        "update": "Impossible de mettre à jour le test."
+      },
+      "success": {
+        "saved": "Le test et ses relations ont été enregistrés."
+      }
+    }
+  },
   "Footer": {
     "note": "Fait avec soin pour les équipes d'orthophonie. Mobile first, adaptatif et pensé pour la collaboration."
   },

@@ -184,20 +184,20 @@
   border-radius: 0.9rem;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25); /* Ombre un peu plus prononcée */
   border: 1px solid rgba(14, 165, 233, 0.2); /* Couleur de bordure utilisant votre variable --border */
-  
+
   /* Gestion de la structure interne */
   display: flex;
   flex-direction: column; /* Important pour que la liste scrollable ne casse pas la hauteur */
   gap: 0.75rem;
   padding: 1rem;
-  
+
   pointer-events: auto;
   width: 100%;
   min-width: 320px;
   max-width: 520px;
-  
+
   /* Sécurité pour ne pas dépasser la hauteur de l'écran */
-  max-height: 85vh; 
+  max-height: 85vh;
 }
 
 .popupHeader {
@@ -211,7 +211,7 @@
 .popupTitle {
   font-weight: 700;
   /* La couleur était trop claire, on la passe en foncé */
-  color: #0f172a; 
+  color: #0f172a;
   font-size: 1.1rem; /* On l'agrandit un tout petit peu pour la lisibilité */
 }
 
@@ -219,9 +219,9 @@
   /* Le scroll se fait ici */
   overflow-y: auto;
   /* On laisse la liste prendre l'espace restant */
-  flex: 1; 
+  flex: 1;
   min-height: 0; /* Important pour le scroll flexbox */
-  
+
   display: grid;
   gap: 0.35rem;
   padding: 0.25rem; /* Léger padding interne */

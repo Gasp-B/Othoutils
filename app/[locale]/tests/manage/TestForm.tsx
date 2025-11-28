@@ -45,8 +45,6 @@ const formSchemaBase = testSchema
 
 type FormValues = z.infer<typeof formSchemaBase>;
 type ApiResponse = { test?: TestDto; tests?: TestDto[]; error?: string };
-type PathologyItem = { id: string; label: string };
-
 const defaultValues: FormValues = {
   id: undefined,
   name: '',
@@ -70,38 +68,35 @@ const defaultValues: FormValues = {
 
 // --- Fonctions API (Fetchers) ---
 async function fetchTests(locale: Locale) {
-  const response = await fetch(`/api/tests?locale=${locale}`);
+  const response = await fetch(`/api/tests?locale=${locale}`, { credentials: 'include' });
   if (!response.ok) throw new Error('Impossible de récupérer les tests');
   const json = (await response.json()) as ApiResponse;
   return testsResponseSchema.parse({ tests: json.tests ?? [] }).tests;
 }
 
 async function fetchTaxonomy(locale: Locale) {
-  const response = await fetch(`/api/tests/taxonomy?locale=${locale}`);
+  const response = await fetch(`/api/tests/taxonomy?locale=${locale}`, { credentials: 'include' });
   if (!response.ok) throw new Error('Impossible de récupérer la taxonomie');
   return (await response.json()) as TaxonomyResponse;
-}
-
-async function fetchPathologies(locale: Locale, query?: string) {
-  const searchParams = new URLSearchParams({ locale, limit: '50' });
-  if (query?.trim()) searchParams.set('q', query.trim());
-  const response = await fetch(`/api/pathologies?${searchParams.toString()}`);
-  if (!response.ok) throw new Error('Impossible de récupérer les pathologies');
-  const json = (await response.json()) as { items: PathologyItem[] };
-  return json.items ?? [];
 }
 
 async function saveTest(payload: FormValues, locale: Locale, method: 'POST' | 'PATCH') {
   const response = await fetch('/api/tests', {
     method,
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ ...payload, locale }),
   });
+
+  const json = (await response.json().catch(() => ({}))) as { error?: string };
+
   if (!response.ok) {
-    const json = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(json.error || 'Erreur de sauvegarde');
+    const error = new Error(json.error || 'saveError');
+    (error as Error & { status?: number }).status = response.status;
+    throw error;
   }
-  return (await response.json()) as ApiResponse;
+
+  return json as ApiResponse;
 }
 
 // --- Composant Toast Local ---
@@ -126,12 +121,11 @@ function TestForm({ locale }: TestFormProps) {
   const formT = useTranslations('ManageTests.form');
   const feedbackT = useTranslations('ManageTests.feedback');
   const multiSelectT = useTranslations('ManageTests.form.multiSelect');
-  
+
   const queryClient = useQueryClient();
-  
+
   const [selectedTestId, setSelectedTestId] = useState<string | null>(null);
   const [newBibliography, setNewBibliography] = useState({ label: '', url: '' });
-  const [pathologyQuery, setPathologyQuery] = useState('');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const { data: tests } = useQuery({ 
@@ -142,12 +136,6 @@ function TestForm({ locale }: TestFormProps) {
   const { data: taxonomy } = useQuery({ 
     queryKey: ['test-taxonomy', locale], 
     queryFn: () => fetchTaxonomy(locale) 
-  });
-
-  const { data: pathologyOptions = [], isLoading: isLoadingPathologies } = useQuery({
-    queryKey: ['pathologies', locale, pathologyQuery],
-    queryFn: () => fetchPathologies(locale, pathologyQuery),
-    placeholderData: (prev) => prev 
   });
 
   const {
@@ -243,12 +231,12 @@ function TestForm({ locale }: TestFormProps) {
             <Label htmlFor="test-selector" className="text-xs uppercase tracking-wider text-slate-500">
               {formT('toolbar.sheetLabel')}
             </Label>
-            <Select
-              id="test-selector"
-              value={selectedTestId ?? ''}
-              onChange={(e) => setSelectedTestId(e.target.value || null)}
-              className="font-semibold bg-white/50"
-            >
+              <Select
+                id="test-selector"
+                value={selectedTestId ?? ''}
+                onChange={(e) => setSelectedTestId(e.currentTarget.value || null)}
+                className="font-semibold bg-white/50"
+              >
               <option value="">✨ {formT('toolbar.newTest')}</option>
               {tests?.map((test) => (
                 <option key={test.id} value={test.id}>
@@ -271,7 +259,25 @@ function TestForm({ locale }: TestFormProps) {
 
       {mutation.isError && (
         <div className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200">
-          <strong>Erreur :</strong> {mutation.error?.message}
+          <strong>{feedbackT('errors.title')} </strong>
+          {(() => {
+            const typedError = mutation.error as Error & { status?: number };
+            const isUnauthorized =
+              typedError?.message === 'Unauthorized' || typedError?.status === 401;
+
+            if (isUnauthorized) {
+              return feedbackT('errors.unauthorized');
+            }
+
+            const reason =
+              typedError?.message && typedError.message !== 'saveError'
+                ? typedError.message
+                : '';
+
+            return reason
+              ? feedbackT('errors.genericWithReason', { reason })
+              : feedbackT('errors.generic');
+          })()}
         </div>
       )}
 
@@ -345,39 +351,40 @@ function TestForm({ locale }: TestFormProps) {
         <div className={styles.columnStack}>
           <Card className="property-panel">
             <CardHeader>
-              <CardTitle>{formT('sections.taxonomy.title')}</CardTitle>
+              <div className="space-y-1">
+                <CardTitle>{formT('sections.taxonomy.title')}</CardTitle>
+                <p className="text-sm text-slate-500">{formT('sections.taxonomy.helper')}</p>
+              </div>
             </CardHeader>
-            <CardContent className={styles.columnStack}> {/* Espacement interne */}
-              
-              <MultiSelect
-                label={formT('sections.taxonomy.domainsLabel')}
-                options={taxonomy?.domains.map(d => ({ id: d.id, label: d.label })) ?? []}
-                selectedValues={currentDomains}
-                onChange={(vals: string[]) => setValue('domains', vals, { shouldDirty: true })}
-                allowCreate={true}
-                translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.domainsLabel') }}
-              />
+            <CardContent className="space-y-4">
+              <div className={styles.columnStack}>
+                <MultiSelect
+                  label={formT('sections.taxonomy.domainsLabel')}
+                  options={taxonomy?.domains.map(d => ({ id: d.id, label: d.label })) ?? []}
+                  selectedValues={currentDomains}
+                  onChange={(vals: string[]) => setValue('domains', vals, { shouldDirty: true })}
+                  allowCreate={true}
+                  translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.domainsLabel') }}
+                />
 
-              <MultiSelect
-                label={formT('sections.taxonomy.pathologiesLabel')}
-                options={pathologyOptions.map((p) => ({ id: p.id, label: p.label }))}
-                selectedValues={currentPathologies}
-                onChange={(vals: string[]) => setValue('pathologies', vals, { shouldDirty: true })}
-                onSearch={setPathologyQuery}
-                isLoading={isLoadingPathologies}
-                allowCreate={false}
-                translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.pathologiesLabel') }}
-              />
+                <MultiSelect
+                  label={formT('sections.taxonomy.pathologiesLabel')}
+                  options={taxonomy?.pathologies.map((p) => ({ id: p.id, label: p.label })) ?? []}
+                  selectedValues={currentPathologies}
+                  onChange={(vals: string[]) => setValue('pathologies', vals, { shouldDirty: true })}
+                  allowCreate={false}
+                  translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.pathologiesLabel') }}
+                />
 
-              <MultiSelect
-                label={formT('sections.taxonomy.tagsLabel')}
-                options={taxonomy?.tags.map(t => ({ id: t.id, label: t.label })) ?? []}
-                selectedValues={currentTags}
-                onChange={(vals: string[]) => setValue('tags', vals, { shouldDirty: true })}
-                allowCreate={true}
-                translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.tagsLabel') }}
-              />
-
+                <MultiSelect
+                  label={formT('sections.taxonomy.tagsLabel')}
+                  options={taxonomy?.tags.map(t => ({ id: t.id, label: t.label })) ?? []}
+                  selectedValues={currentTags}
+                  onChange={(vals: string[]) => setValue('tags', vals, { shouldDirty: true })}
+                  allowCreate={true}
+                  translations={{ ...commonMultiSelectTrans, dialogTitle: formT('sections.taxonomy.tagsLabel') }}
+                />
+              </div>
             </CardContent>
           </Card>
 
