@@ -44,7 +44,7 @@ function getUpdatedEntry(key: string) {
 
 function getConnectSources() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
-  const supabaseWss = supabaseUrl.replace('https://', 'wss://');
+  const supabaseWss = supabaseUrl.replace(/^https:\/\//, 'wss://');
   
   return [
     "'self'", 
@@ -60,8 +60,6 @@ function buildNonce() {
 }
 
 function getSecurityHeaders(nonce: string) {
-  const isProduction = process.env.VERCEL_ENV === 'production';
-
   const scriptSources = [
     "'self'",
     `'nonce-${nonce}'`,
@@ -69,20 +67,12 @@ function getSecurityHeaders(nonce: string) {
     'https://*.vercel.live',
   ];
 
-  if (!isProduction) {
-    scriptSources.push("'unsafe-eval'");
-  }
-
   const styleSources = [
     "'self'",
     `'nonce-${nonce}'`,
     'https://vercel.live',
     'https://*.vercel.live',
   ];
-
-  if (!isProduction) {
-    styleSources.push("'unsafe-inline'");
-  }
 
   const scriptSrc = `script-src ${scriptSources.join(' ')}`;
   const styleSrc = `style-src ${styleSources.join(' ')}`;
@@ -120,8 +110,7 @@ function applySecurityHeaders(response: NextResponse, nonce: string) {
 
 const intlMiddleware = createMiddleware(routing);
 
-export async function proxy(request: NextRequest) {
-  // 1. Rate Limiting
+export default async function proxy(request: NextRequest) {
   const key = getClientKey(request);
   const entry = getUpdatedEntry(key);
   const nonce = buildNonce();
@@ -145,14 +134,12 @@ export async function proxy(request: NextRequest) {
     return limitedResponse;
   }
 
-  // 2. Initialisation de la réponse
   let response = NextResponse.next({
     request: {
       headers: requestHeaders,
     },
   });
 
-  // 3. Supabase Auth : Rafraîchissement de session
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
@@ -174,34 +161,30 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  // Ceci rafraîchit le token si nécessaire
   await supabase.auth.getUser();
 
-  // 4. Rate Limit Headers
   response.headers.set('X-RateLimit-Limit', `${MAX_REQUESTS}`);
   response.headers.set('X-RateLimit-Remaining', `${Math.max(0, MAX_REQUESTS - entry.count)}`);
   response.headers.set('X-RateLimit-Reset', `${entry.expires}`);
 
   applySecurityHeaders(response, nonce);
 
-  // 5. Gestion API : Retour direct
   if (request.nextUrl.pathname.startsWith('/api')) {
     return response;
   }
 
-  // 6. Gestion i18n (Next-Intl)
   const i18nResponse = intlMiddleware(request);
 
-  // Fusion des headers de sécurité et des cookies Supabase dans la réponse i18n
   response.headers.forEach((value, key) => {
-    i18nResponse.headers.set(key, value);
+    if (key.toLowerCase() !== 'set-cookie') {
+      i18nResponse.headers.set(key, value);
+    }
   });
   
-  // Important : copier les cookies de session Supabase vers la réponse finale
-  const setCookie = response.headers.get('set-cookie');
-  if (setCookie) {
-    i18nResponse.headers.set('set-cookie', setCookie);
-  }
+  const supabaseCookies = response.cookies.getAll();
+  supabaseCookies.forEach((cookie) => {
+    i18nResponse.cookies.set(cookie);
+  });
 
   return i18nResponse;
 }
