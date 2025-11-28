@@ -970,3 +970,63 @@ select.input {
     grid-template-columns: 1fr;
   }
 }
+
+.user-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  border: 1px solid rgba(14, 165, 233, 0.3);
+  color: #0284c7;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.user-avatar:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+  border-color: #0ea5e9;
+}
+
+.user-avatar svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* --- Styles Bouton Déclencheur Avatar --- */
+.ph-header__menu-trigger--avatar {
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+}
+
+.ph-header__menu-trigger--avatar:hover {
+  background: none;
+}
+
+/* --- Styles Bouton Déconnexion --- */
+.logout-btn {
+  width: 100%;
+  text-align: left;
+  color: #ef4444; /* Rouge */
+}
+
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* --- Styles Bouton Connexion (si pas déjà présent) --- */
+.login-btn {
+  font-weight: 700;
+  color: #0ea5e9; /* var(--accent) */
+  padding: 0.5rem 0.8rem;
+  border-radius: 12px;
+  transition: background 150ms ease;
+}
+
+.login-btn:hover {
+  background: rgba(14, 165, 233, 0.08);
+}
